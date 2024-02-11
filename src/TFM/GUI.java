@@ -35,13 +35,17 @@ import gov.nasa.worldwind.avlist.AVKey;
 import gov.nasa.worldwind.awt.WorldWindowGLCanvas;
 import gov.nasa.worldwind.event.*;
 import gov.nasa.worldwind.exception.WWAbsentRequirementException;
+import gov.nasa.worldwind.geom.Position;
 import gov.nasa.worldwind.layers.*;
 import gov.nasa.worldwind.layers.placename.PlaceNameLayer;
 import gov.nasa.worldwind.util.*;
 import gov.nasa.worldwindx.examples.util.*;
+import gov.nasa.worldwind.view.BasicView;
 
 import javax.swing.*;
 import java.awt.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -54,6 +58,7 @@ public class GUI {
         protected StatusBar statusBar;
         protected ToolTipController toolTipController;
         protected HighlightController highlightController;
+        Configuration configuration;
 
         public AppPanel(Dimension canvasSize, boolean includeStatusBar) {
             super(new BorderLayout());
@@ -74,7 +79,7 @@ public class GUI {
                 this.add(statusBar, BorderLayout.PAGE_END);
                 this.statusBar.setEventSource(wwd);
             }
-
+            
             // Add controllers to manage highlighting and tool tips.
             this.toolTipController = new ToolTipController(this.getWwd(), AVKey.DISPLAY_NAME, null);
             this.highlightController = new HighlightController(this.getWwd(), SelectEvent.ROLLOVER);
@@ -105,7 +110,9 @@ public class GUI {
         //RouteController
         RouteController routeController;
         
-        //
+        // Timer to manage debouncing
+        private Timer debounceTimer;
+        private double viewAltitude;
         //Simulation simulation;
         
             // Map to hold multiple simulations
@@ -130,6 +137,17 @@ public class GUI {
         public AppFrame(boolean includeStatusBar, boolean includeLayerPanel, boolean includeStatsPanel) {
             this.initialize(includeStatusBar, includeLayerPanel, includeStatsPanel);
         }
+        
+        private void debounceUpdate(double altitude) {
+            // If there's an existing scheduled update, cancel it
+            if (debounceTimer.isRunning()) {
+                debounceTimer.stop();
+            }
+            // Update the action to perform with the latest altitude
+            this.viewAltitude = altitude;
+            
+            debounceTimer.restart(); // Restart the timer
+        }
 
         protected void initialize(boolean includeStatusBar, boolean includeLayerPanel, boolean includeStatsPanel) {
             // Create the WorldWindow.
@@ -142,7 +160,43 @@ public class GUI {
             this.trafficDisplayer = new TrafficDisplayer(this.getWwd());
             addSimulation("DefaultSimulation", new Simulation(events, this.trafficDisplayer.getTrafficSimulationmap()));
             setActiveSimulation("DefaultSimulation");
- 
+             
+//           //Add listener to changes in the View, specifically in the Altitude.
+//            this.getWwd().getView().addPropertyChangeListener(new PropertyChangeListener() {
+//                @Override
+//                public void propertyChange(PropertyChangeEvent evt) {
+//                    Object newValue = evt.getNewValue();
+//                     if (newValue instanceof BasicView) {
+//                        BasicView view = (BasicView) newValue;
+//                        Position eyePosition = view.getEyePosition();
+//                        //System.out.println("Altitude is: " + eyePosition.getAltitude());
+//                        trafficDisplayer.viewUpdated(eyePosition.getAltitude());
+//                     }
+//                }
+//            });
+            
+            this.getWwd().getView().addPropertyChangeListener(new PropertyChangeListener() {
+                @Override
+                public void propertyChange(PropertyChangeEvent evt) {
+                    Object newValue = evt.getNewValue();
+                    if (newValue instanceof BasicView) {
+                        BasicView view = (BasicView) newValue;
+                        Position eyePosition = view.getEyePosition();
+                        // Debounce updates to trafficDisplayer
+                        debounceUpdate(eyePosition.getAltitude());
+                    }
+                }
+            });
+                  
+            // Initialize the debounce timer with a delay and the action to perform
+            debounceTimer = new Timer(100, e -> { // 500 ms delay
+                // Perform your update action here. This block will only execute after 500ms of inactivity.
+                // Since the actionListener cannot directly access `eyePosition` from here,
+                // you need to store it somewhere accessible on the last call to `debounceUpdate`.
+                trafficDisplayer.viewUpdated(viewAltitude);
+            });
+            debounceTimer.setRepeats(false); // Ensure the timer only fires once after the last event
+
             
             
             // Put the pieces together.
@@ -239,8 +293,12 @@ public class GUI {
                     activeSimulation.stopit(); //We should stop all simulations for the moment just the activeSimulation
                 }
             });
-
+    
+            //System.out.println(this.wwjPanel.getWwd().getView().getEyePosition().getAltitude());
+            System.out.println(this.wwjPanel.getWwd().getSceneController().getView().getEyePosition());
             this.pack();
+            
+             
                        
         }
 

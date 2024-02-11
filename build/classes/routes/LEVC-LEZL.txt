@@ -1,0 +1,8 @@
+ID      FREQ   TRK   DIST   Coords                       Name/Remarks
+LEVC             0      0   N39°29'22.00" W000°28'54.00" VALENCIA
+ASTRO          232     46   N39°01'27.99" W001°15'47.00" ASTRO
+POBOS          232     30   N38°43'08.99" W001°46'08.00" POBOS
+XEBAR          232     19   N38°31'15.99" W002°05'33.99" XEBAR
+YES     115.2  232     16   N38°21'38.99" W002°21'10.00" YESTE
+BLN     116.2  259     61   N38°09'09.00" W003°37'29.00" BAILEN
+LEZL           249    117   N37°25'05.00" W005°53'56.00" SEVILLA

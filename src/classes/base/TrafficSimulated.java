@@ -5,6 +5,7 @@
  */
 package classes.base;
 
+import TFM.Simulation;
 import TFM.TrafficIcon;
 import classes.googleearth.GoogleEarthTraffic;
 import gov.nasa.worldwind.geom.Vec4;
@@ -19,6 +20,8 @@ import java.util.logging.Logger;
  */
 public class TrafficSimulated extends Thread {
     
+    
+    private Simulation simulation;
     private String hexCode;
     private Coordinate position;
     private Coordinate target;
@@ -30,14 +33,18 @@ public class TrafficSimulated extends Thread {
     private TrafficSimulatedListener listener = null;
     
     private double sampleTime; // in minutes
-    private int waitTime; // in milliseg
+
     private int routeMode; // ortho or loxodromic 
     private boolean paintInGoogleEarth;
     private GoogleEarthTraffic ge;
     public static final int FLY_LOXODROMIC = 1;
     public static final int FLY_ORTHODROMIC = 2;
-    private static final int THREAD_TIME = 50; // in milliseconds
+    private static final int THREAD_TIME = 1000; // in milliseconds
+    private int waitTime;
     public static double SAMPLE_TIME = 0.5; //  in minutes
+    
+    private long timeStepDelta = 0;
+    private long lastSimulationTime = 0;
 
     //Icon used to display the plane
     private TrafficIcon icon;
@@ -104,6 +111,7 @@ public class TrafficSimulated extends Thread {
     }
     
     private TrafficSimulated(TrafficSimulatedBuilder builder) {
+        this.simulation = builder.simulation;
         this.hexCode = builder.hexCode;
         this.position = builder.position;
         this.target = builder.target;
@@ -114,11 +122,12 @@ public class TrafficSimulated extends Thread {
         this.moving = builder.moving;
         this.listener = builder.listener;
         this.sampleTime = builder.sampleTime;
-        this.waitTime = builder.waitTime;
         this.routeMode = builder.routeMode;
+        this.waitTime = THREAD_TIME;
     }
     // Static inner Builder class for the CREATE command
-    public static class TrafficSimulatedBuilder {
+    public static class TrafficSimulatedBuilder  {
+        private Simulation simulation;
         private String hexCode;
         private Coordinate position;
         private Coordinate target;
@@ -128,10 +137,13 @@ public class TrafficSimulated extends Thread {
         private double traveled;
         private boolean moving;
         private TrafficSimulatedListener listener;
-
         private double sampleTime;
-        private int waitTime;
         private int routeMode;
+        
+        public TrafficSimulatedBuilder setSimulation( Simulation simulation){
+            this.simulation = simulation;
+            return this;
+        }
 
         public TrafficSimulatedBuilder setHexCode(String hexCode) {
             this.hexCode = hexCode;
@@ -180,11 +192,6 @@ public class TrafficSimulated extends Thread {
 
         public TrafficSimulatedBuilder setSampleTime(double sampleTime) {
             this.sampleTime = sampleTime;
-            return this;
-        }
-
-        public TrafficSimulatedBuilder setWaitTime(int waitTime) {
-            this.waitTime = waitTime;
             return this;
         }
 
@@ -246,7 +253,7 @@ public class TrafficSimulated extends Thread {
         this.paintInGoogleEarth = true;
     }
     
-    public void flyit(Coordinate target, int routeMode, long simulationStepTime) {
+    public void flyit(Coordinate target, int routeMode) {
         this.target = target;
         this.routeMode = routeMode;
         if (routeMode == FLY_LOXODROMIC) {
@@ -256,8 +263,8 @@ public class TrafficSimulated extends Thread {
         }
         if (!this.moving) { // if is flying continues            
             this.moving = true;
-            //this.start();
-            this.move(simulationStepTime);
+            this.start();
+            //this.move(simulationStepTime);
         }
     }
     
@@ -300,24 +307,35 @@ public class TrafficSimulated extends Thread {
         if (listener != null) {
             listener.planeStarted(this);
         }
+        long tmpTime;
         while (moving) {
-            display(sampleTime, traveled, course, position);
-            distance = (speed * 1852 / 3600) * SAMPLE_TIME * 60; // in meters traveled in each iteration  
+            //display(sampleTime, traveled, course, position);
+
+            
+            tmpTime = this.simulation.getSimulationTime();
+            timeStepDelta = tmpTime - lastSimulationTime;
+            //Adapt waitTime accordingly to simulation speed.
+            waitTime = (int)Math.round( (double) waitTime/simulation.getSpeed());
+            
+            distance = (speed * 1852 / 3600) * timeStepDelta  /1000; // in meters traveled in each iteration  
             traveled += distance; // total distance
-            sampleTime += SAMPLE_TIME;
+
             position.updateRhumbLinePosition(distance, course);
             if (routeMode == FLY_ORTHODROMIC) {
                 course = position.getGreatCircleInitialBearing(target);
             }
-            altitude = position.getAltitude() + verticalRate * SAMPLE_TIME * ftToMeter;
+            altitude = position.getAltitude() + verticalRate * timeStepDelta  / (1000*60) * ftToMeter;
             position.setAltitude(altitude); //in meters
             
-            System.out.println(this.hexCode + " plane is moving.");
+            //System.out.println(this.hexCode + " plane is moving.");
+            lastSimulationTime = tmpTime;
             try {
                 Thread.sleep(waitTime);
             } catch (InterruptedException ex) {
                 Logger.getLogger(TrafficSimulated.class.getName()).log(Level.SEVERE, null, ex);
+                
             }
+            
         }
         
         if (listener != null) {
@@ -344,6 +362,8 @@ public class TrafficSimulated extends Thread {
 
         System.out.println(this.hexCode + " plane is moving. Traveled: "+ traveled);
     }
+    
+    
             
     
     @Override

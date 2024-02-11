@@ -93,7 +93,8 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     public void setAltitudeScale(double as)
     {
         this.altitudScale=as;
-        
+        System.out.println("Set altitudescale");
+        System.out.println(this.wwd.getView().getEyePosition());
         //Update all traffics
         //this.updateTraffic(null);
         
@@ -188,6 +189,8 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     
     @Override
     public void planeUpdated(TrafficSimulated trfc) {
+        System.out.println("Altitude en m: "+this.wwd.getView().getEyePosition().getAltitude()/1000);
+        //System.out.println("InitialAltitude en m: "+this.wwd.getView().propertyChange(evt));
         // Check if there is an existing polygon and remove it
         if (trafficPolygonMap.containsKey(trfc.getHexCode())) {
             TrafficPolygon existingPolygon = trafficPolygonMap.get(trfc.getHexCode());
@@ -203,6 +206,9 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         this.wwd.redraw();
     }
     
+    public void viewUpdated(double altitude){
+        System.out.println("From Traffic Displayer the altitude is: "+ altitude);
+    }
     
     /**
      * Elimina el traffic cuando nos avisa el listener

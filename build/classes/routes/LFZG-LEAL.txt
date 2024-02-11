@@ -1,0 +1,7 @@
+ID      FREQ   TRK   DIST   Coords                       Name/Remarks
+LEZG             0      0   N41°39'58.00" W001°02'30.00" ZARAGOZA
+CMA     116    193     49   N40°52'02.00" W001°17'52.99" CALAMOCHA
+DISVU          168      8   N40°44'25.00" W001°15'48.00" DISVU
+MANDY          168     51   N39°54'42.00" W001°02'25.99" MANDY
+CLS     117.55 168     13   N39°42'25.99" W000°59'10.99" CALLES
+LEAL           166     88   N38°16'56.00" W000°33'29.00" ALICANTE/ALICANTE-ELCHE

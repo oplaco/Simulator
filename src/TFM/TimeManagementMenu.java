@@ -156,7 +156,6 @@ public class TimeManagementMenu extends javax.swing.JPanel implements TimeUpdate
     }//GEN-LAST:event_pauseJButtonMouseClicked
 
     private void speedJButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_speedJButtonMouseClicked
-        System.out.println("Simulation speed up x2");
         simulation.doubleSpeed();
     }//GEN-LAST:event_speedJButtonMouseClicked
 

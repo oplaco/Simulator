@@ -269,6 +269,7 @@ public class StatusBar extends JPanel implements PositionListener, RenderingList
             s = String.format(altitude + " %,7d km", (int) Math.round(metersAltitude / 1e3));
         else
             s = String.format(altitude + " %,7d m", (int) Math.round(metersAltitude));
+        
         return s;
     }
 

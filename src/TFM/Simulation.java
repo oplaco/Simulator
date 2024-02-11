@@ -5,12 +5,16 @@ import classes.base.Coordinate;
 import classes.base.Pilot;
 import classes.base.Route;
 import classes.base.TrafficSimulated;
+import java.io.File;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import static java.util.Map.entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -19,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
- * @author Gabriel
+ * @author Gabriel Alfonsín Espín 
  */
 
 // Singleton 
@@ -30,6 +34,8 @@ public class Simulation extends Thread {
     private double speed = 1.0;   // Speed factor (1x, 2x, etc.)
     private boolean running = false; // Control flag for the simulation
     private long lastUpdateTime = 0; // To track the last update time
+    private long simulationStepTime = 0; // Track the simulation step duration
+    
     private volatile boolean stopSimulation = false; // Flag to indicate if the simulation should stop
 
     private TimeUpdateListener timeUpdateListener; // Listener to notify of time updates
@@ -159,7 +165,8 @@ public class Simulation extends Thread {
                       new_Iterator.next();
             Pilot pilot = new_Map.getValue();
 
-            pilot.update(this.simulationTime-elapsedSimulationTime);
+            // Update the simulationStepTime that 
+            this.simulationStepTime = (this.simulationTime-elapsedSimulationTime);
             
             //Update the traffic in the trafficDisplayer (i.e. the renderableLayer)
             this.trafficSimulationMap.updateTraffic(pilot.getPlane());
@@ -180,6 +187,9 @@ public class Simulation extends Thread {
                 Map<String, String> variables = event.getVariables();
                 
                 TrafficSimulated.TrafficSimulatedBuilder builder = new TrafficSimulated.TrafficSimulatedBuilder();
+                
+                builder.setSimulation(this);
+                
                 // Assuming event.variables is a Map of some sort
                 if (variables.containsKey("ICAO")) {
                     String icaoCode = variables.get("ICAO");
@@ -190,12 +200,12 @@ public class Simulation extends Thread {
                     }
                     
                 }
-                if (variables.containsKey("lat") & variables.containsKey("lat")) {
+                if (variables.containsKey("lat") & variables.containsKey("lon")) {
                     double lat = Double.parseDouble(variables.get("lat"));
                     double lon = Double.parseDouble(variables.get("lon"));
                     builder.setPosition(new Coordinate("Origin",lat,lon));
                 }
-                if (variables.containsKey("lat") & variables.containsKey("lat") & variables.containsKey("alt")) {
+                if (variables.containsKey("lat") & variables.containsKey("lon") & variables.containsKey("alt")) {
                     double lat = Double.parseDouble(variables.get("lat"));
                     double lon = Double.parseDouble(variables.get("lon"));
                     double altitude = Double.parseDouble(variables.get("alt"));
@@ -219,10 +229,26 @@ public class Simulation extends Thread {
 
                 TrafficSimulated traffic = builder.build();
                 
+                Route route;
+                if (variables.containsKey("route")){
+  
+                try {
+                    String currentDirectory = System.getProperty("user.dir");
+                    String path = currentDirectory+File.separator+"src"+File.separator+"routes"+File.separator+variables.get("route")+".txt";
+                    route = new Route(path);
+                } catch (IOException ex) {
+                    System.out.println("Error reading file: " + ex.getMessage());
+                    route = new Route();
+                }
+
+                }else{
+                    route = new Route();
+                }
                 this.trafficSimulationMap.putTraffic( traffic);
                 
                 //Create Pilot for the newly created aircraft.
-                Pilot pilot = new Pilot(new Route(),traffic,TrafficSimulated.FLY_LOXODROMIC);
+                Pilot pilot = new Pilot(route,traffic,TrafficSimulated.FLY_ORTHODROMIC);
+                pilot.start();
                 this.pilotMap.put(traffic.getHexCode(), pilot);
                 
                 break;
@@ -241,6 +267,10 @@ public class Simulation extends Thread {
     
     public long getSimulationTime() {
         return simulationTime;
+    }
+
+    public double getSpeed() {
+        return speed;
     }
 
     public void setSimulationTime(long simulationTime) {
@@ -262,5 +292,6 @@ public class Simulation extends Thread {
     public void setExecuteCommandListener(ExecuteCommandListener executeCommandListener) {
         this.executeCommandListener = executeCommandListener;
     }
+    
 }
 
