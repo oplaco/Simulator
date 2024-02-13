@@ -37,7 +37,7 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
 
     TrafficSimulationMap trafficSimulationMap; //Map to store Traffic from simulation environment instead of ADSB.
     private IconLayer trafficLayer; //Layer sobre el que se pinta el trafico
-    private RenderableLayer polygonLayer;
+    private RenderableLayer trafficSurfaceLayer;
     private AnnotationLayer annotationLayer; //Layer sobre el que se muestran las anotaciones
     WorldWindow wwd; //Referencia al core de wwd
     
@@ -46,7 +46,7 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     GlobeAnnotation pickedAnnotation; //Globo selecionado
     boolean enabled = true;
     
-    private Map<String, TrafficPolygon> trafficPolygonMap = new ConcurrentHashMap<>(); //Map to store TrafficPolygons
+    private Map<String, TrafficSurface> trafficSurfaceMap = new ConcurrentHashMap<>(); //Map to store TrafficPolygons
 
     private double altitudScale=1;
     
@@ -78,8 +78,8 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         trafficLayer.setName("Simulation Traffic");     
         trafficLayer.setViewClippingEnabled(false);
         
-        polygonLayer = new RenderableLayer();
-        polygonLayer.setName("Simulation Traffic Polygons"); 
+        trafficSurfaceLayer = new RenderableLayer();
+        trafficSurfaceLayer.setName("Simulation Traffic Polygons"); 
         
         annotationLayer = new AnnotationLayer();
         annotationLayer.setName("Traffic Annotations");
@@ -116,8 +116,8 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         return trafficLayer;
     }
     
-    public RenderableLayer getPolygonLayer() {
-        return polygonLayer;
+    public RenderableLayer getTrafficSurfaceLayer() {
+        return trafficSurfaceLayer;
     }
         
     public AnnotationLayer getAnnotationLayer() {
@@ -175,10 +175,10 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
                //trfc.getHexCode(),getNasaPos(trfc));
         //icon.setSize(new Dimension(30,30));
         //trafficLayer.addIcon(icon);
-        TrafficPolygon trafficPolygon = new TrafficPolygon(trfc, getNasaPos(trfc));
-        trafficPolygonMap.put(trfc.getHexCode(), trafficPolygon);
-        polygonLayer.addRenderable(trafficPolygon.getPolygon());
-        
+        TrafficSurface trafficSurface = new TrafficSurface(trfc, getNasaPos(trfc), this.wwd.getView().getEyePosition().getAltitude()/1000, this.wwd.getModel().getGlobe());
+        trafficSurfaceMap.put(trfc.getHexCode(), trafficSurface);
+        trafficSurfaceLayer.addRenderable(trafficSurface.getSurfaceImage());
+   
         this.wwd.redraw();
     }
 
@@ -189,20 +189,19 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     
     @Override
     public void planeUpdated(TrafficSimulated trfc) {
-        System.out.println("Altitude en m: "+this.wwd.getView().getEyePosition().getAltitude()/1000);
         //System.out.println("InitialAltitude en m: "+this.wwd.getView().propertyChange(evt));
         // Check if there is an existing polygon and remove it
-        if (trafficPolygonMap.containsKey(trfc.getHexCode())) {
-            TrafficPolygon existingPolygon = trafficPolygonMap.get(trfc.getHexCode());
-            polygonLayer.removeRenderable(existingPolygon.getPolygon());
+        if (trafficSurfaceMap.containsKey(trfc.getHexCode())) {
+            TrafficSurface existingPolygon = trafficSurfaceMap.get(trfc.getHexCode());
+            trafficSurfaceLayer.removeRenderable(existingPolygon.getSurfaceImage());
         }
 
         // Create a new updated polygon
-        TrafficPolygon trafficPolygon = new TrafficPolygon(trfc, getNasaPos(trfc));
+        TrafficSurface trafficSurface = new TrafficSurface(trfc, getNasaPos(trfc), this.wwd.getView().getEyePosition().getAltitude()/1000, this.wwd.getModel().getGlobe());
 
         // Update the map and layer with the new polygon
-        trafficPolygonMap.put(trfc.getHexCode(), trafficPolygon);
-        polygonLayer.addRenderable(trafficPolygon.getPolygon());
+        trafficSurfaceMap.put(trfc.getHexCode(), trafficSurface);
+        trafficSurfaceLayer.addRenderable(trafficSurface.getSurfaceImage());
         this.wwd.redraw();
     }
     

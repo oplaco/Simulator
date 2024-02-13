@@ -155,25 +155,12 @@ public class GUI {
             this.wwjPanel.setPreferredSize(canvasSize);
 
             //Reading the events from testing file to create the default simulation.
-            String filePath = "src/simulation files/oneplane.csv"; 
+            String filePath = "src/simulation files/threeplane.csv"; 
             List<SimulationEvent> events = SimulationFileReader.readCSVFile(filePath);
             this.trafficDisplayer = new TrafficDisplayer(this.getWwd());
             addSimulation("DefaultSimulation", new Simulation(events, this.trafficDisplayer.getTrafficSimulationmap()));
             setActiveSimulation("DefaultSimulation");
              
-//           //Add listener to changes in the View, specifically in the Altitude.
-//            this.getWwd().getView().addPropertyChangeListener(new PropertyChangeListener() {
-//                @Override
-//                public void propertyChange(PropertyChangeEvent evt) {
-//                    Object newValue = evt.getNewValue();
-//                     if (newValue instanceof BasicView) {
-//                        BasicView view = (BasicView) newValue;
-//                        Position eyePosition = view.getEyePosition();
-//                        //System.out.println("Altitude is: " + eyePosition.getAltitude());
-//                        trafficDisplayer.viewUpdated(eyePosition.getAltitude());
-//                     }
-//                }
-//            });
             
             this.getWwd().getView().addPropertyChangeListener(new PropertyChangeListener() {
                 @Override
@@ -182,6 +169,7 @@ public class GUI {
                     if (newValue instanceof BasicView) {
                         BasicView view = (BasicView) newValue;
                         Position eyePosition = view.getEyePosition();
+                        
                         // Debounce updates to trafficDisplayer
                         debounceUpdate(eyePosition.getAltitude());
                     }
@@ -273,7 +261,7 @@ public class GUI {
             //Insert layers in wwmap
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getAnnotationLayer());
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getTrafficLayer());
-            insertAfterPlacenames(this.getWwd(), trafficDisplayer.getPolygonLayer());
+            insertAfterPlacenames(this.getWwd(), trafficDisplayer.getTrafficSurfaceLayer());
             
             insertAfterPlacenames(this.getWwd(), new LatLonGraticuleLayer());             
           
