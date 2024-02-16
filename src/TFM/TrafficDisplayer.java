@@ -75,11 +75,11 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
 
         
         trafficLayer = new IconLayer();
-        trafficLayer.setName("Simulation Traffic");     
+        trafficLayer.setName("Traffic Old Icon Layer");     
         trafficLayer.setViewClippingEnabled(false);
         
         trafficSurfaceLayer = new RenderableLayer();
-        trafficSurfaceLayer.setName("Simulation Traffic Polygons"); 
+        trafficSurfaceLayer.setName("Traffic Renderable Layer"); 
         
         annotationLayer = new AnnotationLayer();
         annotationLayer.setName("Traffic Annotations");

@@ -27,8 +27,10 @@
  */
 package TFM;
 
+import TFM.polygons.Runway;
 import TFM.simulationEvents.SimulationEvent;
 import TFM.simulationEvents.SimulationFileReader;
+import TFM.utils.Utils;
 import gov.nasa.worldwindx.examples.*;
 import gov.nasa.worldwind.*;
 import gov.nasa.worldwind.avlist.AVKey;
@@ -46,9 +48,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class GUI {
 
@@ -262,6 +266,19 @@ public class GUI {
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getAnnotationLayer());
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getTrafficLayer());
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getTrafficSurfaceLayer());
+            
+            RenderableLayer airportLayer = new RenderableLayer();
+            airportLayer.setName("Airport Renderable Layer");
+                    
+            try {
+                List<Runway> runwayList = Runway.createRunwaysFromTextFile("src/airports/runways.txt");
+                for (Runway runway : runwayList) {
+                    airportLayer.addRenderable(runway.getPolygon());
+                }
+                insertAfterPlacenames(this.getWwd(), airportLayer);
+            } catch (IOException ex) {
+                Logger.getLogger(GUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            }
             
             insertAfterPlacenames(this.getWwd(), new LatLonGraticuleLayer());             
           
