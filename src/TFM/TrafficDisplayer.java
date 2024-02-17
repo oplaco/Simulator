@@ -81,6 +81,8 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         trafficSurfaceLayer = new RenderableLayer();
         trafficSurfaceLayer.setName("Traffic Renderable Layer"); 
         
+        
+        
         annotationLayer = new AnnotationLayer();
         annotationLayer.setName("Traffic Annotations");
         

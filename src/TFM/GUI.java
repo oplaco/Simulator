@@ -28,6 +28,7 @@
 package TFM;
 
 import TFM.polygons.Runway;
+import TFM.polygons.TakeOffSurface;
 import TFM.simulationEvents.SimulationEvent;
 import TFM.simulationEvents.SimulationFileReader;
 import TFM.utils.Utils;
@@ -276,11 +277,23 @@ public class GUI {
                     airportLayer.addRenderable(runway.getPolygon());
                 }
                 insertAfterPlacenames(this.getWwd(), airportLayer);
+                
+                RenderableLayer servitudesLayer = new RenderableLayer();
+                airportLayer.setName("Servitudes Layer");
+
+                TakeOffSurface takeOffSurface = new TakeOffSurface(3000,runwayList.get(0).getRunwayStart(),200);
+                servitudesLayer.addRenderable(takeOffSurface.getPolygon());
+                insertAfterPlacenames(this.getWwd(), servitudesLayer);
+                
             } catch (IOException ex) {
                 Logger.getLogger(GUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
             }
             
-            insertAfterPlacenames(this.getWwd(), new LatLonGraticuleLayer());             
+
+            
+            
+            
+            //insertAfterPlacenames(this.getWwd(), new LatLonGraticuleLayer());             
           
             //insertAfterPlacenames(this.getWwd(), routeController.getPlanesLayer());
             //insertAfterPlacenames(this.getWwd(), routeController.getRouteLayer());

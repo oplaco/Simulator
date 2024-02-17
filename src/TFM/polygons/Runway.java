@@ -24,8 +24,12 @@ public class Runway {
     private String name;
     private String airport;
     private Polygon polygon;
+    private Position runwayStart;
+    private Position runwayEnd;
     
     public Runway(String name, String airport, Position start, Position end, double width){
+        this.runwayStart = start;
+        this.runwayEnd = end;
         this.name = name;
         this.airport = airport;
 
@@ -158,7 +162,12 @@ public class Runway {
     public String getName() {
         return name;
     }
-    
-    
-    
+
+    public Position getRunwayStart() {
+        return runwayStart;
+    }
+
+    public Position getRunwayEnd() {
+        return runwayEnd;
+    } 
 }
