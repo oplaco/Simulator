@@ -51,6 +51,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.List;
 import java.util.logging.Logger;
@@ -266,14 +267,14 @@ public class GUI {
             //Insert layers in wwmap
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getAnnotationLayer());
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getTrafficLayer());
-            insertAfterPlacenames(this.getWwd(), trafficDisplayer.getTrafficSurfaceLayer());
+            insertAfterPlacenames(this.getWwd(), trafficDisplayer.getTrafficPolygonLayer());
             
             RenderableLayer airportLayer = new RenderableLayer();
             airportLayer.setName("Airport Renderable Layer");
                     
             try {
                 List<Runway> runwayList = Runway.createRunwaysFromTextFile("src/airports/runways.txt");
-                for (Runway runway : runwayList) {
+                for (Runway runway : runwayList) {      
                     airportLayer.addRenderable(runway.getPolygon());
                 }
                 insertAfterPlacenames(this.getWwd(), airportLayer);

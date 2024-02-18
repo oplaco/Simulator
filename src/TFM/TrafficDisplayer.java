@@ -10,6 +10,9 @@ import classes.base.TrafficSimulatedListener;
 import gov.nasa.worldwind.WorldWindow;
 import gov.nasa.worldwind.event.SelectEvent;
 import gov.nasa.worldwind.event.SelectListener;
+import gov.nasa.worldwind.geom.Angle;
+import gov.nasa.worldwind.geom.Vec4;
+import gov.nasa.worldwind.globes.Globe;
 import gov.nasa.worldwind.layers.AnnotationLayer;
 import gov.nasa.worldwind.layers.IconLayer;
 import gov.nasa.worldwind.layers.RenderableLayer;
@@ -37,7 +40,7 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
 
     TrafficSimulationMap trafficSimulationMap; //Map to store Traffic from simulation environment instead of ADSB.
     private IconLayer trafficLayer; //Layer sobre el que se pinta el trafico
-    private RenderableLayer trafficSurfaceLayer;
+    private RenderableLayer trafficPolygonLayer;
     private AnnotationLayer annotationLayer; //Layer sobre el que se muestran las anotaciones
     WorldWindow wwd; //Referencia al core de wwd
     
@@ -45,8 +48,9 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     TrafficIcon pickedIcon; //Icono seleccionado
     GlobeAnnotation pickedAnnotation; //Globo selecionado
     boolean enabled = true;
+    private double distanceEyePositionToViewCenter; // Meters (m)
     
-    private Map<String, TrafficSurface> trafficSurfaceMap = new ConcurrentHashMap<>(); //Map to store TrafficPolygons
+    private Map<String, TrafficPolygon> trafficPolygonMap = new ConcurrentHashMap<>(); //Map to store TrafficPolygons
 
     private double altitudScale=1;
     
@@ -77,10 +81,9 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         trafficLayer = new IconLayer();
         trafficLayer.setName("Traffic Old Icon Layer");     
         trafficLayer.setViewClippingEnabled(false);
-        
-        trafficSurfaceLayer = new RenderableLayer();
-        trafficSurfaceLayer.setName("Traffic Renderable Layer"); 
-        
+     
+        trafficPolygonLayer = new RenderableLayer();
+        trafficPolygonLayer.setName("Traffic Polygon Layer");
         
         
         annotationLayer = new AnnotationLayer();
@@ -117,10 +120,12 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     public IconLayer getTrafficLayer() {
         return trafficLayer;
     }
-    
-    public RenderableLayer getTrafficSurfaceLayer() {
-        return trafficSurfaceLayer;
+
+    public RenderableLayer getTrafficPolygonLayer() {
+        return trafficPolygonLayer;
     }
+    
+    
         
     public AnnotationLayer getAnnotationLayer() {
         return annotationLayer;
@@ -177,9 +182,9 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
                //trfc.getHexCode(),getNasaPos(trfc));
         //icon.setSize(new Dimension(30,30));
         //trafficLayer.addIcon(icon);
-        TrafficSurface trafficSurface = new TrafficSurface(trfc, getNasaPos(trfc), this.wwd.getView().getEyePosition().getAltitude()/1000, this.wwd.getModel().getGlobe());
-        trafficSurfaceMap.put(trfc.getHexCode(), trafficSurface);
-        trafficSurfaceLayer.addRenderable(trafficSurface.getSurfaceImage());
+        TrafficPolygon trafficPolygon = new TrafficPolygon(trfc,getNasaPos(trfc), distanceEyePositionToViewCenter);
+        trafficPolygonMap.put(trfc.getHexCode(), trafficPolygon);
+        trafficPolygonLayer.addRenderable(trafficPolygon.getPolygon());
    
         this.wwd.redraw();
     }
@@ -193,22 +198,37 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     public void planeUpdated(TrafficSimulated trfc) {
         //System.out.println("InitialAltitude en m: "+this.wwd.getView().propertyChange(evt));
         // Check if there is an existing polygon and remove it
-        if (trafficSurfaceMap.containsKey(trfc.getHexCode())) {
-            TrafficSurface existingPolygon = trafficSurfaceMap.get(trfc.getHexCode());
-            trafficSurfaceLayer.removeRenderable(existingPolygon.getSurfaceImage());
+        if (trafficPolygonMap.containsKey(trfc.getHexCode())) {
+            TrafficPolygon existingPolygon = trafficPolygonMap.get(trfc.getHexCode());
+            trafficPolygonLayer.removeRenderable(existingPolygon.getPolygon());
         }
 
         // Create a new updated polygon
-        TrafficSurface trafficSurface = new TrafficSurface(trfc, getNasaPos(trfc), this.wwd.getView().getEyePosition().getAltitude()/1000, this.wwd.getModel().getGlobe());
+        TrafficPolygon trafficPolygon = new TrafficPolygon(trfc, getNasaPos(trfc), distanceEyePositionToViewCenter);
 
         // Update the map and layer with the new polygon
-        trafficSurfaceMap.put(trfc.getHexCode(), trafficSurface);
-        trafficSurfaceLayer.addRenderable(trafficSurface.getSurfaceImage());
-        this.wwd.redraw();
+        trafficPolygonMap.put(trfc.getHexCode(), trafficPolygon);
+        trafficPolygonLayer.addRenderable(trafficPolygon.getPolygon());
+        this.wwd.redraw();      
     }
     
     public void viewUpdated(double altitude){
         System.out.println("From Traffic Displayer the altitude is: "+ altitude);
+ 
+        // Current eye position
+        gov.nasa.worldwind.geom.Position eyePosition = this.wwd.getView().getCurrentEyePosition();
+        Vec4 centerPoint = this.wwd.getView().getCenterPoint();
+
+        // Get the globe from WorldWind to convert geographic positions to Cartesian coordinates
+        Globe globe = this.wwd.getModel().getGlobe();
+
+        // Convert eyePosition to Vec4
+        Vec4 eyePoint = globe.computePointFromPosition(eyePosition);
+
+        // Now that both points are in the same coordinate system, calculate the distance
+        double distance = eyePoint.distanceTo3(centerPoint);     
+        System.out.println(distance);
+        this.distanceEyePositionToViewCenter = distance;
     }
     
     /**
