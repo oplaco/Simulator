@@ -28,6 +28,9 @@ public class Pilot extends Thread {
     private boolean PaintInGoogleEarth;
     private PilotListener listener = null;
     
+    //Simulation
+    private Simulation simulation;
+    
     //Vertical profile
     private double cruiseAlt; // feet
     private double climbRate; // fpm
@@ -45,12 +48,14 @@ public class Pilot extends Thread {
     static public double knotToMs = 0.514444;
     static public double meterToNM = 1/1852;
 
-    public Pilot(Route route, TrafficSimulated plane, int routeMode ) {
+    public Pilot(Route route, TrafficSimulated plane, int routeMode , Simulation simulation) {
         this.route = route;
         this.plane = plane;
         this.routeMode = routeMode;
+        this.simulation = simulation;
         this.waitTime = plane.getWaitTime() / 10;
-        this.distanceThreshold = (plane.getSpeed() * 1852 / 3600) * plane.SAMPLE_TIME * 60 / 2; // meters traveled in each iteration / 2
+        System.out.println("Builder: "+plane.getSpeed() + " " + simulation.getSimulationStepTime());
+        this.distanceThreshold = (plane.getSpeed() * 1852 / 3600) * simulation.getSimulationStepTime() / (1000*2); // meters traveled in each iteration / 2
         this.running = true;
         this.PaintInGoogleEarth = false;
         this.verbose = true; // informa por pantalla
@@ -63,12 +68,13 @@ public class Pilot extends Thread {
         topOfDescent=0;
     }
 
-    public Pilot(Route route, TrafficSimulated plane, int routeMode, PilotListener listener) {
+    public Pilot(Route route, TrafficSimulated plane, int routeMode, PilotListener listener, Simulation simulation) {
         this.route = route;
         this.plane = plane;
         this.routeMode = routeMode;
+        this.simulation = simulation;
         this.waitTime = plane.getWaitTime() / 10;
-        this.distanceThreshold = (plane.getSpeed() * 1852 / 3600) * plane.SAMPLE_TIME * 60 / 2; // meters traveled in each iteration / 2
+        this.distanceThreshold = (plane.getSpeed() * 1852 / 3600) * simulation.getSimulationStepTime() /(1000*2); // meters traveled in each iteration / 2
         this.running = true;
         this.PaintInGoogleEarth = false;
         this.verbose = true; // informa por pantalla
@@ -93,7 +99,7 @@ public class Pilot extends Thread {
         //Check input is valid
         if(cruiseAltFt<= 0)
         {
-            throw new RuntimeException("Pilot of "+plane.getHexCode()+": Crise altitude should be positive");
+            throw new RuntimeException("Pilot of "+plane.getHexCode()+": Cruise altitude should be positive");
         }
         if(climbRateFpm<= 0 )
         {
@@ -251,7 +257,10 @@ public class Pilot extends Thread {
         plane.flyit(to, routeMode);
         double distance = to.getRhumbLineDistance(plane.getPosition());
         //System.out.println(distanceThreshold);
+     
         while (distance > distanceThreshold) {
+            System.out.println(distance + " " +distanceThreshold);
+            System.out.println("Plane altitude: "+plane.getPosition().getAltitude());
             //System.out.println("Distance: "+distance);
             //Leave while if plane is stopped
             if(!plane.isMoving())

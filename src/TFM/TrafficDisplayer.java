@@ -213,7 +213,7 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     }
     
     public void viewUpdated(double altitude){
-        System.out.println("From Traffic Displayer the altitude is: "+ altitude);
+        //System.out.println("From Traffic Displayer the altitude is: "+ altitude);
  
         // Current eye position
         gov.nasa.worldwind.geom.Position eyePosition = this.wwd.getView().getCurrentEyePosition();

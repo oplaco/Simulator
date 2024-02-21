@@ -94,6 +94,18 @@ public class Simulation extends Thread {
     
     public synchronized void doubleSpeed() {
         this.speed = 2*this.speed;
+        
+        //Double all the pilots distanceThresholds
+        Iterator<Entry<String, Pilot>> new_Iterator
+            = this.pilotMap.entrySet().iterator();
+        // Iterating every set of entry in the HashMap
+        while (new_Iterator.hasNext()) {
+            Map.Entry<String, Pilot> new_Map
+                = (Map.Entry<String, Pilot>)
+                      new_Iterator.next();
+            Pilot pilot = new_Map.getValue();
+            pilot.distanceThreshold = (pilot.getPlane().getSpeed() * 1852 / 3600) * this.getSimulationStepTime() / (1000*2);       
+        }
     }
     
     public synchronized void stopit() {
@@ -119,6 +131,8 @@ public class Simulation extends Thread {
 
                 // Update the simulation time
                 simulationTime += elapsedSimulationTime;
+                // Update the simulationStepTime that 
+                this.simulationStepTime = (this.simulationTime-elapsedSimulationTime);
 
                 // Perform simulation updates (e.g., move aircraft, update conditions)
                 updateSimulation(elapsedSimulationTime);
@@ -164,9 +178,6 @@ public class Simulation extends Thread {
                 = (Map.Entry<String, Pilot>)
                       new_Iterator.next();
             Pilot pilot = new_Map.getValue();
-
-            // Update the simulationStepTime that 
-            this.simulationStepTime = (this.simulationTime-elapsedSimulationTime);
             
             //Update the traffic in the trafficDisplayer (i.e. the renderableLayer)
             this.trafficSimulationMap.updateTraffic(pilot.getPlane());
@@ -247,7 +258,8 @@ public class Simulation extends Thread {
                 this.trafficSimulationMap.putTraffic( traffic);
                 
                 //Create Pilot for the newly created aircraft.
-                Pilot pilot = new Pilot(route,traffic,TrafficSimulated.FLY_ORTHODROMIC);
+                Pilot pilot = new Pilot(route,traffic,TrafficSimulated.FLY_ORTHODROMIC,this);
+                pilot.setVerticalProfile(10000, 1000, -1000);
                 pilot.start();
                 this.pilotMap.put(traffic.getHexCode(), pilot);
                 
@@ -271,6 +283,10 @@ public class Simulation extends Thread {
 
     public double getSpeed() {
         return speed;
+    }
+
+    public long getSimulationStepTime() {
+        return simulationStepTime;
     }
 
     public void setSimulationTime(long simulationTime) {
