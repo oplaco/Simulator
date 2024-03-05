@@ -94,6 +94,7 @@ public class Console extends javax.swing.JPanel implements ExecuteCommandListene
                 this.appendToConsole("Invalid input","error");
             } else {
                 //this.appendToConsole(consoleTextField.getText(),"normal");
+                this.consoleTextField.setText("");
                 this.simulation.getEvents().add(event);
                 //add the event to the event list
             }

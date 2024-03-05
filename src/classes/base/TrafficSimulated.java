@@ -31,24 +31,31 @@ public class TrafficSimulated extends Thread {
     private double traveled; // meters
     private boolean moving;
     private TrafficSimulatedListener listener = null;
-    
-    private double sampleTime; // in minutes
-
     private int routeMode; // ortho or loxodromic 
-    private boolean paintInGoogleEarth;
-    private GoogleEarthTraffic ge;
     public static final int FLY_LOXODROMIC = 1;
     public static final int FLY_ORTHODROMIC = 2;
+    
+    //Performance
+    private double takeoffAcceleration = 5; // knots/s average A320 takeoff acceleration
+    private double climbAcceleration = 3.12; 
+    
+    //Times
+    private double sampleTime; // in minutes
     private static final int THREAD_TIME = 1000; // in milliseconds
     private int waitTime;
     public static double SAMPLE_TIME = 0.5; //  in minutes
-    
     private long timeStepDelta = 0;
     private long lastSimulationTime = 0;
 
-    //Icon used to display the plane
+    //Display
+    private boolean focused; //View focusing on the aircraft
+    private boolean followed; //View following the aircraft
     private TrafficIcon icon;
-       
+    private boolean paintInGoogleEarth;
+    private GoogleEarthTraffic ge;
+    
+ 
+    
     //Conversion units
     static private double ftToMeter = 0.3048;
     static private double knotToMs = 0.514444;
@@ -204,49 +211,6 @@ public class TrafficSimulated extends Thread {
             return new TrafficSimulated(this);
         }
     }
-
-    // Other methods of TrafficSimulated...
-
-    
-    //GETTERS
-    public boolean isMoving() {
-        return moving;
-    }
-    public double getVerticalRate() {
-        return verticalRate;
-    }
-
-    public void setVerticalRate(double verticalRateFpm) {
-        this.verticalRate = verticalRateFpm; //fpm
-    }
-    
-    public double getCourse() {
-        return course;
-    }
-    
-    public double getTraveled() {
-        return traveled;
-    }
-    
-    public Coordinate getPosition() {
-        return position;
-    }
-    
-    public double getSpeed() {
-        return speed;
-    }
-    
-    public int getWaitTime() {
-        return waitTime;
-    }
-    
-    public String getHexCode() {
-        return hexCode;
-    }
-    
-    public void setSpeed(double speed) {
-        this.speed = speed;
-    }
     
     public void setPaintInGoogleEarth(GoogleEarthTraffic ge) {
         this.ge = ge;
@@ -314,8 +278,9 @@ public class TrafficSimulated extends Thread {
             
             tmpTime = this.simulation.getSimulationTime();
             timeStepDelta = tmpTime - lastSimulationTime;
+
             //Adapt waitTime accordingly to simulation speed.
-            waitTime = (int)Math.round( (double) waitTime/simulation.getSpeed());
+            waitTime = (int)Math.round( (double) THREAD_TIME/simulation.getSpeed());
             
             distance = (speed * 1852 / 3600) * timeStepDelta  /1000; // in meters traveled in each iteration  
             traveled += distance; // total distance
@@ -362,15 +327,7 @@ public class TrafficSimulated extends Thread {
 
         System.out.println(this.hexCode + " plane is moving. Traveled: "+ traveled);
     }
-    
-    
-            
-    
-    @Override
-    public String toString() {
-        return hexCode;
-    }
-    
+         
     public void println() {
         
         String milesStr = String.format("%.2f", traveled / 1852);
@@ -391,6 +348,87 @@ public class TrafficSimulated extends Thread {
     {
         icon.setPosition(position.toPosition(altitudScale));
         return icon;
+    }
+    
+    
+    
+    @Override
+    public String toString() {
+        return hexCode;
+    }
+    
+    //GETTERS & SETTERS
+    public boolean isMoving() {
+        return moving;
+    }
+    public double getVerticalRate() {
+        return verticalRate;
+    }
+
+    public void setVerticalRate(double verticalRateFpm) {
+        this.verticalRate = verticalRateFpm; //fpm
+    }
+    
+    public double getCourse() {
+        return course;
+    }
+    
+    public double getTraveled() {
+        return traveled;
+    }
+    
+    public Coordinate getPosition() {
+        return position;
+    }
+    
+    public double getSpeed() {
+        return speed;
+    }
+    
+    public int getWaitTime() {
+        return waitTime;
+    }
+    
+    public String getHexCode() {
+        return hexCode;
+    }
+    
+    public void setSpeed(double speed) {
+        this.speed = speed;
+    }
+
+    public double getTakeoffAcceleration() {
+        return takeoffAcceleration;
+    }
+
+    public void setTakeoffAcceleration(double takeoffAcceleration) {
+        this.takeoffAcceleration = takeoffAcceleration;
+    }
+
+    public double getClimbAcceleration() {
+        return climbAcceleration;
+    }
+
+    public void setClimbAcceleration(double climbAcceleration) {
+        this.climbAcceleration = climbAcceleration;
+    }
+
+    
+
+    public long getLastSimulationTime() {
+        return lastSimulationTime;
+    }
+
+    public long getTimeStepDelta() {
+        return timeStepDelta;
+    }
+
+    public boolean isFollowed() {
+        return followed;
+    }
+
+    public void setFollowed(boolean followed) {
+        this.followed = followed;
     }
     
     

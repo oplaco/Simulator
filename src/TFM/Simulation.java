@@ -1,10 +1,15 @@
 package TFM;
 
+import TFM.simulationEvents.Command;
+import TFM.simulationEvents.CommandFactory;
 import TFM.simulationEvents.SimulationEvent;
 import classes.base.Coordinate;
 import classes.base.Pilot;
 import classes.base.Route;
 import classes.base.TrafficSimulated;
+import gov.nasa.worldwind.View;
+import gov.nasa.worldwind.geom.Angle;
+import gov.nasa.worldwind.geom.Position;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
@@ -12,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import static java.util.Map.entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -35,6 +41,7 @@ public class Simulation extends Thread {
     private boolean running = false; // Control flag for the simulation
     private long lastUpdateTime = 0; // To track the last update time
     private long simulationStepTime = 0; // Track the simulation step duration
+    private TrafficDisplayer trafficDisplayer;
     
     private volatile boolean stopSimulation = false; // Flag to indicate if the simulation should stop
 
@@ -47,7 +54,11 @@ public class Simulation extends Thread {
     //private TrafficMap
     private List<SimulationEvent> events;
 
-  
+    //conversion
+    static public double ftToMeter = 0.3048;
+    static public double knotToMs = 0.514444;
+    static public double meterToNM = 1/1852;
+    
     public Simulation() {
         this.start();
     }
@@ -58,9 +69,10 @@ public class Simulation extends Thread {
         this.start();
     }
     
-    public Simulation(List<SimulationEvent> events, TrafficSimulationMap trafficSimulationMap) {
+    public Simulation(List<SimulationEvent> events, TrafficDisplayer trafficDisplayer) {
         this.events = events;
-        this.trafficSimulationMap = trafficSimulationMap;
+        this.trafficSimulationMap = trafficDisplayer.getTrafficSimulationmap();
+        this.trafficDisplayer = trafficDisplayer;
         this.pilotMap = new ConcurrentHashMap<String, Pilot>();
         this.start();
     }
@@ -94,18 +106,6 @@ public class Simulation extends Thread {
     
     public synchronized void doubleSpeed() {
         this.speed = 2*this.speed;
-        
-        //Double all the pilots distanceThresholds
-        Iterator<Entry<String, Pilot>> new_Iterator
-            = this.pilotMap.entrySet().iterator();
-        // Iterating every set of entry in the HashMap
-        while (new_Iterator.hasNext()) {
-            Map.Entry<String, Pilot> new_Map
-                = (Map.Entry<String, Pilot>)
-                      new_Iterator.next();
-            Pilot pilot = new_Map.getValue();
-            pilot.distanceThreshold = (pilot.getPlane().getSpeed() * 1852 / 3600) * this.getSimulationStepTime() / (1000*2);       
-        }
     }
     
     public synchronized void stopit() {
@@ -190,92 +190,115 @@ public class Simulation extends Thread {
     }
     
     private void executeCommand(SimulationEvent event) {
-        String command = event.getCommand();
-        switch (command) {
-            case "CREATE":
-                // Handle Command logic
-                System.out.println("Create event at: " + event.getTime() + ".Variables: " + event.getVariables());
-                Map<String, String> variables = event.getVariables();
-                
-                TrafficSimulated.TrafficSimulatedBuilder builder = new TrafficSimulated.TrafficSimulatedBuilder();
-                
-                builder.setSimulation(this);
-                
-                // Assuming event.variables is a Map of some sort
-                if (variables.containsKey("ICAO")) {
-                    String icaoCode = variables.get("ICAO");
-                    if (this.trafficSimulationMap.get(icaoCode)==null){
-                        builder.setHexCode(icaoCode);
-                    }else{
-                        throw new IllegalArgumentException("ICAO code " + icaoCode + " already exists in the simulation.");
-                    }
-                    
-                }
-                if (variables.containsKey("lat") & variables.containsKey("lon")) {
-                    double lat = Double.parseDouble(variables.get("lat"));
-                    double lon = Double.parseDouble(variables.get("lon"));
-                    builder.setPosition(new Coordinate("Origin",lat,lon));
-                }
-                if (variables.containsKey("lat") & variables.containsKey("lon") & variables.containsKey("alt")) {
-                    double lat = Double.parseDouble(variables.get("lat"));
-                    double lon = Double.parseDouble(variables.get("lon"));
-                    double altitude = Double.parseDouble(variables.get("alt"));
-                    builder.setPosition(new Coordinate("Origin",lat,lon,altitude));
-                }
-                if (variables.containsKey("bea")) {
-                    double course = Double.parseDouble(variables.get("bea"));
-                    builder.setCourse(course);
-                }else {builder.setCourse(0);}
-                if (variables.containsKey("spd")) {
-                    double traffic_speed = Double.parseDouble(variables.get("spd"));
-                    builder.setSpeed(traffic_speed);
-                } else {builder.setSpeed(100);}
-                if (variables.containsKey("tlat") & variables.containsKey("tlon")) {
-                    double tlat = Double.parseDouble(variables.get("tlat"));
-                    double tlon = Double.parseDouble(variables.get("tlon"));
-                    builder.setTarget(new Coordinate("Target",tlat,tlon));
-                } else {
-                    builder.setTarget(new Coordinate("DefaultTarget",0,0));
-                }
-
-                TrafficSimulated traffic = builder.build();
-                
-                Route route;
-                if (variables.containsKey("route")){
-  
-                try {
-                    String currentDirectory = System.getProperty("user.dir");
-                    String path = currentDirectory+File.separator+"src"+File.separator+"routes"+File.separator+variables.get("route")+".txt";
-                    route = new Route(path);
-                } catch (IOException ex) {
-                    System.out.println("Error reading file: " + ex.getMessage());
-                    route = new Route();
-                }
-
-                }else{
-                    route = new Route();
-                }
-                this.trafficSimulationMap.putTraffic( traffic);
-                
-                //Create Pilot for the newly created aircraft.
-                Pilot pilot = new Pilot(route,traffic,TrafficSimulated.FLY_ORTHODROMIC,this);
-                pilot.setVerticalProfile(10000, 1000, -1000);
-                pilot.start();
-                this.pilotMap.put(traffic.getHexCode(), pilot);
-                
-                break;
-
-            case "UPDATE":
-                // Handle Command2 logic
-                System.out.println("Update event at: " + event.getTime() + " " + ".Variables: " + event.getVariables());
-                break;
-                
-            default:
-                System.out.println("Default case command");
-                break;
+    String commandStr = event.getCommand();
+        try {
+            Command command = CommandFactory.getCommand(commandStr);
+            command.execute(this,event);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Error: " + e.getMessage());
         }
     }
-    // ... additional methods ...
+    
+//    private void executeCommand(SimulationEvent event) {
+//        
+//        String command = event.getCommand();
+//        Map<String, String> variables = event.getVariables();
+//        System.out.println("Event at: " + event.getTime() + ".Variables: " + event.getVariables());
+//        
+//        switch (command) {
+//            case "CREATE":
+//                // Handle Command logic 
+//                TrafficSimulated.TrafficSimulatedBuilder builder = new TrafficSimulated.TrafficSimulatedBuilder();
+//                
+//                builder.setSimulation(this);
+//                
+//                if (variables.containsKey("ICAO")) {
+//                    String icaoCode = variables.get("ICAO");
+//                    if (this.trafficSimulationMap.get(icaoCode)==null){
+//                        builder.setHexCode(icaoCode);
+//                    }else{
+//                        throw new IllegalArgumentException("ICAO code " + icaoCode + " already exists in the simulation.");
+//                    }                   
+//                }
+//                if (variables.containsKey("lat") & variables.containsKey("lon")) {
+//                    double lat = Double.parseDouble(variables.get("lat"));
+//                    double lon = Double.parseDouble(variables.get("lon"));
+//                    builder.setPosition(new Coordinate("Origin",lat,lon));
+//                }
+//                if (variables.containsKey("lat") & variables.containsKey("lon") & variables.containsKey("alt")) {
+//                    double lat = Double.parseDouble(variables.get("lat"));
+//                    double lon = Double.parseDouble(variables.get("lon"));
+//                    double altitude = Double.parseDouble(variables.get("alt"));
+//                    builder.setPosition(new Coordinate("Origin",lat,lon,altitude));
+//                }
+//                if (variables.containsKey("bea")) {
+//                    double course = Double.parseDouble(variables.get("bea"));
+//                    builder.setCourse(course);
+//                }else {builder.setCourse(0);}
+//                if (variables.containsKey("spd")) {
+//                    double traffic_speed = Double.parseDouble(variables.get("spd"));
+//                    builder.setSpeed(traffic_speed);
+//                } else {builder.setSpeed(100);}
+//                if (variables.containsKey("tlat") & variables.containsKey("tlon")) {
+//                    double tlat = Double.parseDouble(variables.get("tlat"));
+//                    double tlon = Double.parseDouble(variables.get("tlon"));
+//                    builder.setTarget(new Coordinate("Target",tlat,tlon));
+//                } else {
+//                    builder.setTarget(new Coordinate("DefaultTarget",0,0));
+//                }
+//
+//                TrafficSimulated traffic = builder.build();
+//                
+//                Route route;
+//                if (variables.containsKey("route")){
+//  
+//                try {
+//                    String currentDirectory = System.getProperty("user.dir");
+//                    String path = currentDirectory+File.separator+"src"+File.separator+"routes"+File.separator+variables.get("route")+".txt";
+//                    route = new Route(path);
+//                } catch (IOException ex) {
+//                    System.out.println("Error reading file: " + ex.getMessage());
+//                    route = new Route();
+//                }
+//
+//                }else{
+//                    route = new Route();
+//                }
+//                this.trafficSimulationMap.putTraffic( traffic);
+//                
+//                //Create Pilot for the newly created aircraft.
+//                Pilot pilot = new Pilot(route,traffic,TrafficSimulated.FLY_ORTHODROMIC,this);
+//                pilot.initPhaseFlight();
+//                pilot.setVerticalProfile(10000, 10000, -1000);
+//                pilot.start();
+//                this.pilotMap.put(traffic.getHexCode(), pilot);
+//                
+//                break;
+//
+//            case "UPDATE":
+//                // Handle Command2 logic
+//                System.out.println("Update event at: " + event.getTime() + " " + ".Variables: " + event.getVariables());
+//                break;
+//                
+//            default:
+//                System.out.println("Default case command");
+//                break;
+//                
+//            case "CENTERVIEW":
+//                System.out.println("Command center view executed");
+//                if (variables.containsKey("ICAO")) {
+//                    String icaoCode = variables.get("ICAO");
+//                    if (this.trafficSimulationMap.get(icaoCode)!=null){
+//                        TrafficSimulated followedTraffic = this.trafficSimulationMap.get(icaoCode);
+//                        followedTraffic.setFollowed(true);
+//                    }else{
+//                        throw new IllegalArgumentException("ICAO code " + icaoCode + " does not exists in the simulation.");
+//                    }                   
+//                }
+//               
+//        }
+//    }
+//    // ... additional methods ...
     
     public long getSimulationTime() {
         return simulationTime;
@@ -307,6 +330,14 @@ public class Simulation extends Thread {
 
     public void setExecuteCommandListener(ExecuteCommandListener executeCommandListener) {
         this.executeCommandListener = executeCommandListener;
+    }
+
+    public TrafficSimulationMap getTrafficSimulationMap() {
+        return trafficSimulationMap;
+    }
+
+    public ConcurrentHashMap<String, Pilot> getPilotMap() {
+        return pilotMap;
     }
     
 }

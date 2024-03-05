@@ -2,7 +2,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package TFM;
+package TFM.polygons;
 
 /**
  *
@@ -42,13 +42,17 @@ public class TrafficPolygon{
     public TrafficPolygon(TrafficSimulated ts, Position pos,double distanceEyeToViewCenter){
             // Create a polygon, set some of its properties and set its attributes.
             double baseValue = 19070000; // This is the default value of viewAltitude when launching a worldWind application (in m).
-            double adjustmentFactor = 0.9; // To adjust the non-linearity of the scale factor.
+            double adjustmentFactor = 0.8; // To adjust the non-linearity of the scale factor.
             double scaleFactor = Math.pow(distanceEyeToViewCenter / baseValue, adjustmentFactor); // Use to resize the aircraft depending on the viewAltitude
-
             double course = ts.getCourse(); // Aircraft's current bearing in degrees
-
+            double diagonalDistance;
             
-            double diagonalDistance = scaleFactor*(200000 * Math.sqrt(2)) / 2; // Half the diagonal
+            if (ts.isFollowed()){
+                diagonalDistance = 300;
+            }else{
+                diagonalDistance = scaleFactor*(500000 * Math.sqrt(2)) / 2;
+            }
+
             double adjustedBearing = course + 45; // Adjust bearing to point to corner
             // Calculate corner positions
             // Calculate corner position for each of the four corners

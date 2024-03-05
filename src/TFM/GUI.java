@@ -164,7 +164,7 @@ public class GUI {
             String filePath = "src/simulation files/oneplane.csv"; 
             List<SimulationEvent> events = SimulationFileReader.readCSVFile(filePath);
             this.trafficDisplayer = new TrafficDisplayer(this.getWwd());
-            addSimulation("DefaultSimulation", new Simulation(events, this.trafficDisplayer.getTrafficSimulationmap()));
+            addSimulation("DefaultSimulation", new Simulation(events, this.trafficDisplayer));
             setActiveSimulation("DefaultSimulation");
              
             

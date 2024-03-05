@@ -4,13 +4,16 @@
  */
 package TFM;
 
+import TFM.polygons.TrafficPolygon;
 import classes.base.Coordinate;
 import classes.base.TrafficSimulated;
 import classes.base.TrafficSimulatedListener;
+import gov.nasa.worldwind.View;
 import gov.nasa.worldwind.WorldWindow;
 import gov.nasa.worldwind.event.SelectEvent;
 import gov.nasa.worldwind.event.SelectListener;
 import gov.nasa.worldwind.geom.Angle;
+import gov.nasa.worldwind.geom.LatLon;
 import gov.nasa.worldwind.geom.Vec4;
 import gov.nasa.worldwind.globes.Globe;
 import gov.nasa.worldwind.layers.AnnotationLayer;
@@ -20,7 +23,9 @@ import gov.nasa.worldwind.render.GlobeAnnotation;
 import gov.nasa.worldwindx.examples.util.SlideShowAnnotation;
 import java.awt.Dimension;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,7 +47,8 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     private IconLayer trafficLayer; //Layer sobre el que se pinta el trafico
     private RenderableLayer trafficPolygonLayer;
     private AnnotationLayer annotationLayer; //Layer sobre el que se muestran las anotaciones
-    WorldWindow wwd; //Referencia al core de wwd
+    private WorldWindow wwd; //Referencia al core de wwd
+    private View view;
     
     TrafficIcon lastOver; //Ultimo icono por el que se pasó por encima
     TrafficIcon pickedIcon; //Icono seleccionado
@@ -64,7 +70,7 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         wwd.getSceneController().getDrawContext().setPickPointFrustumDimension(
                             new Dimension(40, 40));
         wwd.addSelectListener(this);
-        
+        this.view = wwd.getView();
         Position vlc = new Position(0.4727777777777778, 39.489444444444445, 4.0);
         
         
@@ -202,7 +208,14 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
             TrafficPolygon existingPolygon = trafficPolygonMap.get(trfc.getHexCode());
             trafficPolygonLayer.removeRenderable(existingPolygon.getPolygon());
         }
-
+        
+        if(trfc.isFollowed()){
+            System.out.println("Altitude: "+trfc.getPosition().getAltitude());
+            view.setEyePosition(new gov.nasa.worldwind.geom.Position(Angle.fromDegrees(trfc.getPosition().getLatitude()), Angle.fromDegrees(trfc.getPosition().getLongitude()), trfc.getPosition().getAltitude()*2));
+            view.setPitch(Angle.fromDegrees(60));
+            view.setHeading(Angle.fromDegrees(trfc.getCourse()));
+        }
+    
         // Create a new updated polygon
         TrafficPolygon trafficPolygon = new TrafficPolygon(trfc, getNasaPos(trfc), distanceEyePositionToViewCenter);
 
@@ -376,5 +389,10 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     public TrafficSimulationMap getTrafficSimulationmap() {
         return trafficSimulationMap;
     }
+
+    public WorldWindow getWwd() {
+        return wwd;
+    }
+    
     
 }

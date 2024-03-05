@@ -22,6 +22,7 @@ public class SimulationEvent {
         ALLOWED_COMMANDS.add("CREATE");
         ALLOWED_COMMANDS.add("UPDATE");
         ALLOWED_COMMANDS.add("DELETE");
+        ALLOWED_COMMANDS.add("CENTERVIEW");
     }
     
     private long time;
