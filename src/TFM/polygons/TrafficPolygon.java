@@ -84,6 +84,7 @@ public class TrafficPolygon{
     }
     
     public static Position calculatePosition(Position start, double bearing, double distance) {
+        System.out.println("Polygon elevation: "+start.getElevation());
         double radiusEarth = 6371000.0; // Earth's radius in meters
         double distRatio = distance / radiusEarth;
         double bearingRad = Math.toRadians(bearing);

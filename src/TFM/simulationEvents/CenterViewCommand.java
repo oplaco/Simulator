@@ -5,8 +5,11 @@
 package TFM.simulationEvents;
 
 import TFM.Simulation;
+import TFM.TrafficSimulationMap;
 import classes.base.TrafficSimulated;
+import java.util.Iterator;
 import java.util.Map;
+import traffic.Traffic;
 
 /**
  *
@@ -15,15 +18,24 @@ import java.util.Map;
 public class CenterViewCommand implements Command {
     @Override
     public void execute(Simulation simulation, SimulationEvent event) {
+        TrafficSimulationMap trafficSimulationMap = simulation.getTrafficSimulationMap();
+        //TBD. Make the followed aircraft a simulation parameter so we dont have to loop trough each aircraft to unfollow it first.
+        unfollowAllPlanes(trafficSimulationMap);
         Map<String, String> variables = event.getVariables();
         if (variables.containsKey("ICAO")) {
             String icaoCode = variables.get("ICAO");
-            if (simulation.getTrafficSimulationMap().get(icaoCode)!=null){
-                TrafficSimulated followedTraffic = simulation.getTrafficSimulationMap().get(icaoCode);
+            if (trafficSimulationMap.get(icaoCode)!=null){
+                TrafficSimulated followedTraffic = trafficSimulationMap.get(icaoCode);
                 followedTraffic.setFollowed(true);
             }else{
                 throw new IllegalArgumentException("ICAO code " + icaoCode + " does not exists in the simulation.");
             }                   
+        }
+    }
+    
+    private void unfollowAllPlanes(TrafficSimulationMap trafficSimulationMap){
+        for (TrafficSimulated traffic : trafficSimulationMap.values()) {
+            traffic.setFollowed(false);
         }
     }
 }

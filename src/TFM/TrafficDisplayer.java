@@ -73,7 +73,6 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         this.view = wwd.getView();
         Position vlc = new Position(0.4727777777777778, 39.489444444444445, 4.0);
         
-        
         try {
             trafficSimulationMap = new TrafficSimulationMap(this,vlc);
             //trafficmap = new TrafficMap("158.42.40.45", 10003, vlc, this);

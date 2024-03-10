@@ -274,24 +274,23 @@ public class TrafficSimulated extends Thread {
         long tmpTime;
         while (moving) {
             //display(sampleTime, traveled, course, position);
-
-            
+           
             tmpTime = this.simulation.getSimulationTime();
             timeStepDelta = tmpTime - lastSimulationTime;
 
             //Adapt waitTime accordingly to simulation speed.
             waitTime = (int)Math.round( (double) THREAD_TIME/simulation.getSpeed());
-            
-            distance = (speed * 1852 / 3600) * timeStepDelta  /1000; // in meters traveled in each iteration  
+                    
+            distance = (speed * 1852 / 3600) * timeStepDelta  /1000; // in meters traveled in each iteration 
+           
             traveled += distance; // total distance
 
             position.updateRhumbLinePosition(distance, course);
             if (routeMode == FLY_ORTHODROMIC) {
                 course = position.getGreatCircleInitialBearing(target);
             }
-            altitude = position.getAltitude() + verticalRate * timeStepDelta  / (1000*60) * ftToMeter;
+            altitude = position.getAltitude() + verticalRate * timeStepDelta  / (1000*60);
             position.setAltitude(altitude); //in meters
-            
             //System.out.println(this.hexCode + " plane is moving.");
             lastSimulationTime = tmpTime;
             try {

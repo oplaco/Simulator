@@ -183,7 +183,7 @@ public class GUI {
             });
                   
             // Initialize the debounce timer with a delay and the action to perform
-            debounceTimer = new Timer(100, e -> { // 500 ms delay
+            debounceTimer = new Timer(100, e -> { // 100 ms delay
                 // Perform your update action here. This block will only execute after 500ms of inactivity.
                 // Since the actionListener cannot directly access `eyePosition` from here,
                 // you need to store it somewhere accessible on the last call to `debounceUpdate`.

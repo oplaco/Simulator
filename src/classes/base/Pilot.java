@@ -31,6 +31,8 @@ public class Pilot extends Thread {
     
     //Simulation
     private Simulation simulation;
+    private long lastSimulationTime;
+    private long simulationTime;
     
     
     //Flight Phases
@@ -46,7 +48,7 @@ public class Pilot extends Thread {
     //Speeds
     private double cruiseSpeed = 560; // Knots
     private double takeoffSpeed = 160; // Knots
-    private double landingSpeed = 160; // Knots
+    private double approachSpeed = 160; // Knots
     
     //Vertical profile
     private double cruiseAlt = 15000; // feet
@@ -65,8 +67,8 @@ public class Pilot extends Thread {
         this.plane = plane;
         this.flightPhase = Pilot.CRUISE;
         this.routeMode = routeMode;
-        this.waitTime = plane.getWaitTime() / 10;
-        System.out.println("Builder: "+plane.getSpeed() + " " + simulation.getSimulationStepTime());
+        this.waitTime = plane.getWaitTime() / 2;
+        System.out.println("Builder: "+plane.getSpeed() + " " + simulation.getElapsedSimulationTime());
         updateDistanceThreshold();
         this.running = true;
         this.PaintInGoogleEarth = false;
@@ -88,7 +90,7 @@ public class Pilot extends Thread {
         this.routeMode = routeMode;
         this.simulation = simulation;
         this.waitTime = plane.getWaitTime() / 10;
-        System.out.println("Builder: "+plane.getSpeed() + " " + simulation.getSimulationStepTime());
+        System.out.println("Builder: "+plane.getSpeed() + " " + simulation.getElapsedSimulationTime());
         updateDistanceThreshold();
         this.running = true;
         this.PaintInGoogleEarth = false;
@@ -129,7 +131,7 @@ public class Pilot extends Thread {
     }
     //Meters traveled each iteration
     private void updateDistanceThreshold(){
-        distanceThreshold = (plane.getSpeed() * 1852 / 3600) * simulation.getSimulationStepTime() /(1000*2);
+        distanceThreshold = 2*(plane.getSpeed() * Simulation.knotToMs) * simulation.getElapsedSimulationTime() /(1000);
     }
     /**
      * Uniformly accelerated rectilinear motion.
@@ -144,14 +146,17 @@ public class Pilot extends Thread {
                 break;
                 
             case TAKEOFFRUN:
-                newSpeed = plane.getSpeed() + plane.getTakeoffAcceleration()* (simulation.getSimulationTime()-plane.getLastSimulationTime())/1000;
+                
+                newSpeed = plane.getSpeed() + plane.getTakeoffAcceleration()* (simulationTime-lastSimulationTime)/1000;
+                System.out.println("Simulation time: "+simulationTime + " lastSimulationTime " +lastSimulationTime);
                 if (newSpeed>takeoffSpeed){
+                    newSpeed = takeoffSpeed;
                     this.flightPhase = CLIMB;
                 }
                 plane.setSpeed(newSpeed);
 
             case CLIMB:
-                newSpeed = plane.getSpeed() + plane.getClimbAcceleration()* (simulation.getSimulationTime()-plane.getLastSimulationTime())/1000;
+                newSpeed = plane.getSpeed() + plane.getClimbAcceleration()* (simulationTime-lastSimulationTime)/1000;
                 if (newSpeed<cruiseSpeed){
                     plane.setSpeed(newSpeed);
                 }
@@ -162,21 +167,30 @@ public class Pilot extends Thread {
                 break;
                 
             case DESCENT:
-                plane.setVerticalRate(descentRate);
+                
+                newSpeed = plane.getSpeed() - plane.getClimbAcceleration()* (simulationTime-lastSimulationTime)/1000;
+                if (newSpeed>approachSpeed){
+                    plane.setSpeed(newSpeed);
+                }
                 break;
             case APPROACH:
-                plane.setVerticalRate(descentRate);
+                plane.setSpeed(approachSpeed);
                 break;
             case LANDING:
-                plane.setVerticalRate(0);
+                newSpeed = plane.getSpeed() -plane.getTakeoffAcceleration()* (simulationTime-lastSimulationTime)/1000;
+                if (newSpeed>0){
+                    plane.setSpeed(newSpeed);
+                }else{
+                    plane.setSpeed(0);
+                }
                 break;
         }
         
-        System.out.println("Plane updateSpeed : " + plane.getSpeed());
+        System.out.println("Update speed: " + plane.getSpeed());
     }
     
     private void updateVerticalRate(){
-        System.out.println("Update vertical rate for phase: " + flightPhase);
+ 
         switch (flightPhase) {
             case Pilot.TAXI:
                 plane.setVerticalRate(0);
@@ -195,14 +209,18 @@ public class Pilot extends Thread {
                 break;
             case Pilot.DESCENT:
                 plane.setVerticalRate(descentRate);
+                if (plane.getPosition().getAltitude()<300){
+                    this.flightPhase = this.flightPhase=Pilot.APPROACH;
+                }
                 break;
             case Pilot.APPROACH:
-                plane.setVerticalRate(descentRate);
+                plane.setVerticalRate(0);
                 break;
             case Pilot.LANDING:
                 plane.setVerticalRate(0);
                 break;
         }
+        System.out.println("Vertical Rate (ft/m): " + plane.getVerticalRate()+" Plane altitude (ft): " + plane.getPosition().getAltitude()+" Cruise alt(ft): "+cruiseAlt);
     }
     
      /**
@@ -381,18 +399,29 @@ public class Pilot extends Thread {
         distanceInWpLeft = getDistanceInWp();
         plane.flyit(to, routeMode);
         double distance = to.getRhumbLineDistance(plane.getPosition());
+        double distanceToTOD;
+        double distanceToRunwayEnd;
         //System.out.println(distanceThreshold);
      
         while (distance > distanceThreshold) {
-            //System.out.println("Distance to next wp: " + distance + ". Traveled d: " +distance + "Plane alt: "+plane.getPosition().getAltitude());
+            simulationTime = this.simulation.getSimulationTime();
+   
+
             updateDistanceThreshold();
-            System.out.println("distante to next wp " + distance);
-            System.out.println("distanceThreshold " + distanceThreshold);
-            double distanceToTOD = route.getTodPos().getGreatCircleDistance(plane.getPosition());
+            distanceToTOD = route.getTodPos().getGreatCircleDistance(plane.getPosition());
+            distanceToRunwayEnd = route.getDestination().getGreatCircleDistance(plane.getPosition()); 
+            System.out.println("Distance to next wp: " + distance + "distanceThreshold: " + distanceThreshold);
             //System.out.println("distance to TOD: "+distanceToTOD); 
+            //System.out.println("Flight phase: "+flightPhase); 
+   
             if (distanceToTOD<distanceThreshold){
-                //this.flightPhase = DESCENT;
+                this.flightPhase = DESCENT;
             }
+            if (distanceToRunwayEnd<3000){
+                this.flightPhase = LANDING;
+            }
+            
+            
             //Leave while if plane is stopped
             if(!plane.isMoving())
             {
@@ -407,6 +436,7 @@ public class Pilot extends Thread {
                 Logger.getLogger(Pilot.class
                         .getName()).log(Level.SEVERE, null, ex);
             }
+            lastSimulationTime = simulationTime;
         }
         if (verbose) {
             System.out.println("[PILOT]: ****[" + plane + "] in " + to.getLocationName() + " (estimated leg error: " + Math.round(distance) + " meters)");
