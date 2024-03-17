@@ -14,55 +14,109 @@ import gov.nasa.worldwind.geom.LatLon;
 import gov.nasa.worldwind.geom.Position;
 import gov.nasa.worldwind.geom.Vec4;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
  * @author Gabriel
  */
-public class TCASTransponder extends Thread{
+public class TCASTransponder{
+    
+    public static int otherTraffic = 0;
+    public static int proximateTraffic = 1;
+    public static int trafficAdvisory = 2;
+    public static int resolutionAdvisory = 3;
+    private int trafficType;
+    
+    double TCPA, CPA;
+    double distanceToTraffic;
     
     private long range = 200000; // meters
     private int sentivityLevel;
-    private TrafficSimulationMap trafficSimulationMap; //Need to have access to all the aircrafts in the simulation
+    private ConcurrentHashMap<String, Pilot> pilotMap; //Need to have access to all the aircrafts in the simulation
     private ConcurrentHashMap<String, TrafficSimulated> trafficWithinRangeMap; //Store all the aircrafts that are in range.
     private WorldWindow wwd;
     private String ownHexCode;
+    private TrafficSimulated ownTraffic;
+
     
-    public TCASTransponder(String hexCode,WorldWindow wwd,TrafficSimulationMap trafficSimulationMap){
+    public TCASTransponder(String hexCode,WorldWindow wwd,ConcurrentHashMap pilotMap){
         this.wwd = wwd;
-        this.trafficSimulationMap = trafficSimulationMap;
+        this.pilotMap = pilotMap;
         this.ownHexCode = hexCode;
+        this.ownTraffic = this.pilotMap.get(ownHexCode).getPlane();
     }
     
-    
-    @Override
-    public void run(){
-        
-        //Check for the positions of all aircrafts in trafficSimulationMap
-        
-        //Update the trafficWithinRangeMap with the aircrafts which distance is lower than range;
-        
-        //Para cada uno de ellos calcular el TAU
-    }
+ 
     public void iteration(){
-        for (Map.Entry<String, TrafficSimulated> entry : trafficSimulationMap.entrySet()) {
+        for (Map.Entry<String, Pilot> entry : pilotMap.entrySet()) {
             String hexCode = entry.getKey();
-            TrafficSimulated traffic = entry.getValue();
+            Pilot pilot = entry.getValue();
 
             // Skip the reference plane itself
             if (!hexCode.equals(ownHexCode)) {
-                computeTCASInterrogation(traffic);
+                // Calculate TCPA and CPA between the two planes.
+                computeTCASInterrogation(pilot.getPlane());
+                
+                distanceToTraffic = ownTraffic.getPosition().getGreatCircleDistance(pilot.getPlane().getPosition());
+                //update the traffic type (traffic advisory, resolution advisory based on TCPA)
+                updateTrafficType();
+
+                if (trafficType==resolutionAdvisory){
+                    if(!pilotMap.get(ownHexCode).isOtherTCASSolvingRA()){
+                        handleResolutionAdvisory(pilot);
+                    }
+                }
+                //Here I need to implement the logic to tell one pilot to make his plane climb and the other descent. 
+                // The problem is how do I make both TCAS work, should one block the other or what?
+            }
+        
+        }
+    }
+    
+    public void updateTrafficType(){
+        //Only enforce TA and RA if targets are within 6NM. It should be 6NM horizontally and within 1200ft.
+        if(distanceToTraffic<6/Simulation.meterToNM){
+            if(TCPA<25 && TCPA>0){
+                trafficType = resolutionAdvisory;
+            }else if(TCPA<40 && TCPA>0){
+                trafficType = trafficAdvisory;
             }
         }
     }
     
+    private void handleResolutionAdvisory(Pilot otherPilot) {
+        //Avoid both the TCAS systems to solve the same advisory.
+        if(!pilotMap.get(ownHexCode).isOtherTCASSolvingRA()){
+            otherPilot.setOtherTCASSolvingRA(true);
+        }
+        
+        
+        TrafficSimulated otherPlane = otherPilot.getPlane();
+        double myAltitude = ownTraffic.getPosition().getAltitude();
+        double otherAltitude = otherPlane.getPosition().getAltitude();
+
+        if (myAltitude > otherAltitude) {
+            // I'm higher, I should climb, other descends
+            ownTraffic.setVerticalRate(1000);
+            otherPlane.setVerticalRate(-1000); //descent
+        } else {
+            // I'm lower or equal, I should descend, other climbs
+            ownTraffic.setVerticalRate(-1000);//descent
+            otherPlane.setVerticalRate(1000); 
+        }
+
+        // Logging for debug purposes
+        System.out.println("[TCAS] RA. Altitude" + ownTraffic.getHexCode()+" :"+ ownTraffic.getPosition().getAltitude() + " "+ ownTraffic.getVerticalRate()+" Altitude 2: " + otherPlane.getPosition().getAltitude() +" "+ otherPlane.getVerticalRate());
+    }
+    
     private void computeTCASInterrogation(TrafficSimulated traffic2){
-        double TCAS,CPA;
-        TrafficSimulated traffic1 = trafficSimulationMap.get(ownHexCode);
+        TrafficSimulated traffic1 = pilotMap.get(ownHexCode).getPlane();
         
         //Compute NED relative Position. The origin is traffic1.
         Vec4 vec4_traffic1 = wwd.getModel().getGlobe().computePointFromPosition(getNasaPos(traffic1));
@@ -81,10 +135,10 @@ public class TCASTransponder extends Thread{
             traffic1_NEDspeed[2]-traffic2_NEDspeed[2]
         };
         
-        TCAS = calculateTCPA(traffic2NED, relative_Velocity);
+        TCPA = calculateTCPA(traffic2NED, relative_Velocity);
         CPA = calculateCPA(traffic2NED, relative_Velocity);
-        
-        System.out.println("Plane: "+traffic1.getHexCode()+" TCAS: "+TCAS+ "s . CPA: "+ CPA);
+        //System.out.println("[TCAS] "+traffic1.getHexCode()+" TCPA: "+TCPA+ "s . CPA: "+ CPA);
+        //System.out.println("[TCAS] "+traffic1.getHexCode()+" Vertical Rate: "+ traffic1.getVerticalRate());
     }
     
     /*
@@ -181,4 +235,9 @@ public class TCASTransponder extends Thread{
                         pos.getAltitude()*Simulation.ftToMeter);
         return nasa_pos;
     }
+
+    public int getTrafficType() {
+        return trafficType;
+    }
+    
 }

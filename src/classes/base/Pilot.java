@@ -6,6 +6,7 @@
 package classes.base;
 
 import TCAS.TCASTransponder;
+import static TCAS.TCASTransponder.resolutionAdvisory;
 import TFM.Simulation;
 import classes.googleearth.GoogleEarthTraffic;
 import java.awt.Color;
@@ -30,8 +31,11 @@ public class Pilot extends Thread {
     private GoogleEarthTraffic ge;
     private boolean PaintInGoogleEarth;
     private PilotListener listener = null;
-    private TCASTransponder myTCASTransponder;
     private Coordinate to; // Current plane destination.
+    
+    // TCAS
+    private TCASTransponder myTCASTransponder;
+    private volatile boolean otherTCASSolvingRA;
     
     //Simulation
     private Simulation simulation;
@@ -189,40 +193,42 @@ public class Pilot extends Thread {
                 break;
         }
         
-        System.out.println("Pilot update speed: " + plane.getSpeed());
+        //System.out.println("Pilot update speed: " + plane.getSpeed());
     }
     
     private void updateVerticalRate(){
- 
-        switch (flightPhase) {
-            case Pilot.TAXI:
-                plane.setVerticalRate(0);
-                break;
-            case Pilot.TAKEOFFRUN:
-                plane.setVerticalRate(0);
-                break;
-            case Pilot.CLIMB:
-                plane.setVerticalRate(climbRate);
-                if (plane.getPosition().getAltitude()>cruiseAlt){
-                    plane.getPosition().setAltitude(cruiseAlt);                 
-                    this.flightPhase = CRUISE;
-                }
-                break;
-            case Pilot.CRUISE:
-                plane.setVerticalRate(0);
-                break;
-            case Pilot.DESCENT:
-                plane.setVerticalRate(descentRate);
-                if (plane.getPosition().getAltitude()<300){
-                    this.flightPhase = this.flightPhase=Pilot.APPROACH;
-                }
-                break;
-            case Pilot.APPROACH:
-                plane.setVerticalRate(0);
-                break;
-            case Pilot.LANDING:
-                plane.setVerticalRate(0);
-                break;
+        if(myTCASTransponder.getTrafficType()!=TCASTransponder.resolutionAdvisory){
+            System.out.println("[PILOT] "+plane.getHexCode()+" Updating vertical rate");
+            switch (flightPhase) {
+                case Pilot.TAXI:
+                    plane.setVerticalRate(0);
+                    break;
+                case Pilot.TAKEOFFRUN:
+                    plane.setVerticalRate(0);
+                    break;
+                case Pilot.CLIMB:
+                    plane.setVerticalRate(climbRate);
+                    if (plane.getPosition().getAltitude()>cruiseAlt){
+                        plane.getPosition().setAltitude(cruiseAlt);
+                        this.flightPhase = CRUISE;
+                    }
+                    break;
+                case Pilot.CRUISE:
+                    plane.setVerticalRate(0);
+                    break;
+                case Pilot.DESCENT:
+                    plane.setVerticalRate(descentRate);
+                    if (plane.getPosition().getAltitude()<300){
+                        this.flightPhase = this.flightPhase=Pilot.APPROACH;
+                    }
+                    break;
+                case Pilot.APPROACH:
+                    plane.setVerticalRate(0);
+                    break;
+                case Pilot.LANDING:
+                    plane.setVerticalRate(0);
+                    break;
+            }
         }
         //System.out.println("Vertical Rate (ft/m): " + plane.getVerticalRate()+" Plane altitude (ft): " + plane.getPosition().getAltitude()+" Cruise alt(ft): "+cruiseAlt);
     }
@@ -428,7 +434,7 @@ public class Pilot extends Thread {
             updateDistanceThreshold();
             distanceToTOD = route.getTodPos().getGreatCircleDistance(plane.getPosition());
             distanceToRunwayEnd = route.getDestination().getGreatCircleDistance(plane.getPosition()); 
-            System.out.println("Pilot of: "+plane.getHexCode()+"D to next wp: " + distance + "dThreshold: " + distanceThreshold+ " p alt: "+plane.getPosition().getAltitude());
+            //System.out.println("Pilot of: "+plane.getHexCode()+"D to next wp: " + distance + "dThreshold: " + distanceThreshold+ " p alt: "+plane.getPosition().getAltitude());
             //System.out.println("distance to TOD: "+distanceToTOD); 
             //System.out.println("Flight phase: "+flightPhase); 
    
@@ -468,7 +474,7 @@ public class Pilot extends Thread {
     @Override
     public void run() {
         int i;
-        myTCASTransponder = new TCASTransponder(plane.getHexCode(),simulation.getTrafficDisplayer().getWwd(),simulation.getTrafficSimulationMap());
+        myTCASTransponder = new TCASTransponder(plane.getHexCode(),simulation.getTrafficDisplayer().getWwd(),simulation.getPilotMap());
 
         if (listener != null) {
             listener.starting(route.getDeparture());
@@ -623,12 +629,20 @@ public class Pilot extends Thread {
         return plane;
     }
     
-        public void verboseON() {
+    public void verboseON() {
         verbose = true;
     }
 
     public void verboseOFF() {
         verbose = false;
+    }
+
+    public boolean isOtherTCASSolvingRA() {
+        return otherTCASSolvingRA;
+    }
+
+    public void setOtherTCASSolvingRA(boolean otherTCASSolvingRA) {
+        this.otherTCASSolvingRA = otherTCASSolvingRA;
     }
    
 }

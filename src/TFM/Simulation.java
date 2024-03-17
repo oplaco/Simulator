@@ -240,7 +240,7 @@ public class Simulation extends Thread {
     public TrafficSimulationMap getTrafficSimulationMap() {
         return trafficSimulationMap;
     }
-
+    
     public ConcurrentHashMap<String, Pilot> getPilotMap() {
         return pilotMap;
     }
@@ -252,5 +252,5 @@ public class Simulation extends Thread {
     public TrafficDisplayer getTrafficDisplayer() {
         return trafficDisplayer;
     }
-        
+          
 }
