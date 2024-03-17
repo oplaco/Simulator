@@ -5,9 +5,11 @@
  */
 package classes.base;
 
+import TCAS.TCASTransponder;
 import TFM.Simulation;
 import classes.googleearth.GoogleEarthTraffic;
 import java.awt.Color;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,11 +25,13 @@ public class Pilot extends Thread {
     private int routeMode; // ortho or loxodromic 
     private int waitTime; // in milliseg
     public double distanceThreshold; //Meters traveled each iteration
-    private boolean running;
+    private volatile boolean running = true; //The volatile keyword ensures that changes to the variable are immediately visible to all threads.
     private boolean verbose;
     private GoogleEarthTraffic ge;
     private boolean PaintInGoogleEarth;
     private PilotListener listener = null;
+    private TCASTransponder myTCASTransponder;
+    private Coordinate to; // Current plane destination.
     
     //Simulation
     private Simulation simulation;
@@ -131,7 +135,7 @@ public class Pilot extends Thread {
     }
     //Meters traveled each iteration
     private void updateDistanceThreshold(){
-        distanceThreshold = 2*(plane.getSpeed() * Simulation.knotToMs) * simulation.getElapsedSimulationTime() /(1000);
+        distanceThreshold = 3*(plane.getSpeed() * Simulation.knotToMs) * simulation.getElapsedSimulationTime() /(1000);
     }
     /**
      * Uniformly accelerated rectilinear motion.
@@ -148,7 +152,6 @@ public class Pilot extends Thread {
             case TAKEOFFRUN:
                 
                 newSpeed = plane.getSpeed() + plane.getTakeoffAcceleration()* (simulationTime-lastSimulationTime)/1000;
-                System.out.println("Simulation time: "+simulationTime + " lastSimulationTime " +lastSimulationTime);
                 if (newSpeed>takeoffSpeed){
                     newSpeed = takeoffSpeed;
                     this.flightPhase = CLIMB;
@@ -186,7 +189,7 @@ public class Pilot extends Thread {
                 break;
         }
         
-        System.out.println("Update speed: " + plane.getSpeed());
+        System.out.println("Pilot update speed: " + plane.getSpeed());
     }
     
     private void updateVerticalRate(){
@@ -201,6 +204,7 @@ public class Pilot extends Thread {
             case Pilot.CLIMB:
                 plane.setVerticalRate(climbRate);
                 if (plane.getPosition().getAltitude()>cruiseAlt){
+                    plane.getPosition().setAltitude(cruiseAlt);                 
                     this.flightPhase = CRUISE;
                 }
                 break;
@@ -220,7 +224,7 @@ public class Pilot extends Thread {
                 plane.setVerticalRate(0);
                 break;
         }
-        System.out.println("Vertical Rate (ft/m): " + plane.getVerticalRate()+" Plane altitude (ft): " + plane.getPosition().getAltitude()+" Cruise alt(ft): "+cruiseAlt);
+        //System.out.println("Vertical Rate (ft/m): " + plane.getVerticalRate()+" Plane altitude (ft): " + plane.getPosition().getAltitude()+" Cruise alt(ft): "+cruiseAlt);
     }
     
      /**
@@ -404,13 +408,27 @@ public class Pilot extends Thread {
         //System.out.println(distanceThreshold);
      
         while (distance > distanceThreshold) {
+            // Pause thread if running is false
+            synchronized (this) {
+                while (!running) {
+                    try {
+                        wait(); // Wait until notified
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt(); // Reset the interrupt status
+                        return; // Optional: Stop the execution if the thread is interrupted
+                    }
+                }
+            }
+            
+            // Code inside the loop
             simulationTime = this.simulation.getSimulationTime();
    
+            myTCASTransponder.iteration();
 
             updateDistanceThreshold();
             distanceToTOD = route.getTodPos().getGreatCircleDistance(plane.getPosition());
             distanceToRunwayEnd = route.getDestination().getGreatCircleDistance(plane.getPosition()); 
-            System.out.println("Distance to next wp: " + distance + "distanceThreshold: " + distanceThreshold);
+            System.out.println("Pilot of: "+plane.getHexCode()+"D to next wp: " + distance + "dThreshold: " + distanceThreshold+ " p alt: "+plane.getPosition().getAltitude());
             //System.out.println("distance to TOD: "+distanceToTOD); 
             //System.out.println("Flight phase: "+flightPhase); 
    
@@ -450,6 +468,7 @@ public class Pilot extends Thread {
     @Override
     public void run() {
         int i;
+        myTCASTransponder = new TCASTransponder(plane.getHexCode(),simulation.getTrafficDisplayer().getWwd(),simulation.getTrafficSimulationMap());
 
         if (listener != null) {
             listener.starting(route.getDeparture());
@@ -462,18 +481,21 @@ public class Pilot extends Thread {
             for (i = 0; i < route.getWp().length; i++) {
                 nextWp=i;
                 System.out.println("Waypoint number: "+ nextWp);
-                fly(route.getWp()[i]);
+                to = route.getWp()[i];
+                fly(this.to);
                 if(!plane.isMoving())
                 {
                     return;
                 }
             }
             nextWp=-1;//no wp
-            fly(route.getDestination());
+            to = route.getDestination();
+            fly(to);
             plane.stoppit();
         } else { // ruta directa entre los aeropuertos
             nextWp=-1; // no wp
-            fly(route.getDestination());
+            to = route.getDestination();
+            fly(to);
             plane.stoppit();
         }
         try {
@@ -572,7 +594,18 @@ public class Pilot extends Thread {
         plane.setPaintInGoogleEarth(ge);
     }
 
-        
+    public void pauseThread() {
+        System.out.println("Pilot of: "+plane.getHexCode()+" was paused.");
+        running = false;
+        plane.stoppit();
+    }
+
+    public synchronized void resumeThread() {
+        System.out.println("Pilot of: "+plane.getHexCode()+" was resumed.");
+        running = true;
+        notifyAll(); // Notify the thread to continue
+        plane.startit();
+    } 
     
     public double getTopOfClimb() {
         return topOfClimb;

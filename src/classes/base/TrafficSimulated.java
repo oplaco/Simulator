@@ -30,6 +30,7 @@ public class TrafficSimulated extends Thread {
     private double course; // degrees
     private double traveled; // meters
     private boolean moving;
+    private boolean arrivedAtDestination = false;
     private TrafficSimulatedListener listener = null;
     private int routeMode; // ortho or loxodromic 
     public static final int FLY_LOXODROMIC = 1;
@@ -228,13 +229,8 @@ public class TrafficSimulated extends Thread {
         if (!this.moving) { // if is flying continues            
             this.moving = true;
             this.start();
-            //this.move(simulationStepTime);
         }
-    }
-    
-    public void stoppit() {
-        this.moving = false;
-    }
+    }   
     
     private void display(double sampleTime, double traveled, double course, Coordinate position) {
         String milesStr, courseStr, latitudeStr, longitudeStr, timeStr,altitudeStr;
@@ -267,22 +263,33 @@ public class TrafficSimulated extends Thread {
         double altitude;
         
         traveled = 0;
-        System.out.println(this.hexCode + " plane is running.");
+        System.out.println(this.hexCode + " PLANE RUN METHOD !!!!.");
         if (listener != null) {
             listener.planeStarted(this);
         }
         long tmpTime;
-        while (moving) {
+        
+        while (true) { // Keep the thread alive
+            while (!moving) { // Wait if not moving
+                try {
+                    synchronized (this) {
+                        wait(); // Wait until notified to resume
+                    }
+                } catch (InterruptedException e) {
+                    System.out.println("Thread interrupted while waiting.");
+                    return; // Optionally, handle interruption (e.g., cleanup) before exiting
+                }
+            }    
             //display(sampleTime, traveled, course, position);
-           
+
             tmpTime = this.simulation.getSimulationTime();
             timeStepDelta = tmpTime - lastSimulationTime;
 
             //Adapt waitTime accordingly to simulation speed.
             waitTime = (int)Math.round( (double) THREAD_TIME/simulation.getSpeed());
-                    
+
             distance = (speed * 1852 / 3600) * timeStepDelta  /1000; // in meters traveled in each iteration 
-           
+
             traveled += distance; // total distance
 
             position.updateRhumbLinePosition(distance, course);
@@ -291,40 +298,23 @@ public class TrafficSimulated extends Thread {
             }
             altitude = position.getAltitude() + verticalRate * timeStepDelta  / (1000*60);
             position.setAltitude(altitude); //in meters
-            //System.out.println(this.hexCode + " plane is moving.");
+
             lastSimulationTime = tmpTime;
             try {
                 Thread.sleep(waitTime);
             } catch (InterruptedException ex) {
                 Logger.getLogger(TrafficSimulated.class.getName()).log(Level.SEVERE, null, ex);
-                
+
+            }
+
+            if (arrivedAtDestination) { // Implement logic to set shouldExit when you want to terminate the thread for good
+                if (listener != null) {
+                    listener.planeStopped(this);
+                }
+                break;
             }
             
-        }
-        
-        if (listener != null) {
-            listener.planeStopped(this);
-        }
-        
-    }
-    
-    public void move(double simulation_step_time){
-        double distance = (speed * 1852 / 3600) * simulation_step_time / 1000; // in meters traveled in each iteration  
-        traveled += distance; // total distance
-        //sampleTime += SAMPLE_TIME;
-
-        position.updateRhumbLinePosition(distance, course);
-        course = position.getRhumbLineBearing(target);
-        
-        double remaining_distance = position.getRhumbLineDistance(target);
-        System.out.println("Remaining distance: "+remaining_distance);
-        
-        
-        
-        double altitude = position.getAltitude() + verticalRate * simulation_step_time * ftToMeter;
-        position.setAltitude(altitude); //in meters
-
-        System.out.println(this.hexCode + " plane is moving. Traveled: "+ traveled);
+        }   
     }
          
     public void println() {
@@ -349,7 +339,16 @@ public class TrafficSimulated extends Thread {
         return icon;
     }
     
+    public synchronized void stoppit() {
+        moving = false;
+        // No need to call notifyAll() here since we want the thread to check the condition and wait.
+    }
     
+    
+    public synchronized void startit() {
+        moving = true;
+        notifyAll(); // Wake up the thread so it can check the moving condition again.
+    }
     
     @Override
     public String toString() {
@@ -360,6 +359,7 @@ public class TrafficSimulated extends Thread {
     public boolean isMoving() {
         return moving;
     }
+    
     public double getVerticalRate() {
         return verticalRate;
     }

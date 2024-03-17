@@ -19,6 +19,7 @@ import java.util.Map.Entry;
 import static java.util.Map.entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -58,6 +59,7 @@ public class Simulation extends Thread {
     static public double ftToMeter = 0.3048;
     static public double knotToMs = 0.514444;
     static public double meterToNM = 1/1852;
+    static public double ftMinToMs = 1/196.85039370078738;
     
     public Simulation() {
         this.start();
@@ -93,10 +95,15 @@ public class Simulation extends Thread {
         running = true;
         this.lastUpdateTime = System.currentTimeMillis(); // Reset the last update time
         
+        // Resume each pilot
+        forEachPilot(Pilot::resumeThread);
     }
 
     public synchronized void pause() {
         running = false;
+        
+        // Pause each pilot
+        forEachPilot(Pilot::pauseThread);
     }
 
     public synchronized void setSpeed(double speed) {
@@ -195,6 +202,13 @@ public class Simulation extends Thread {
         }
     }
       
+    private void forEachPilot(Consumer<Pilot> action) {
+        for (Map.Entry<String, Pilot> entry : pilotMap.entrySet()) {
+            Pilot pilot = entry.getValue();
+            action.accept(pilot);
+        }
+    }
+   
     public long getSimulationTime() {
         return simulationTime;
     }
@@ -234,6 +248,9 @@ public class Simulation extends Thread {
     public long getElapsedSimulationTime() {
         return elapsedSimulationTime;
     }
-    
-}
 
+    public TrafficDisplayer getTrafficDisplayer() {
+        return trafficDisplayer;
+    }
+        
+}
