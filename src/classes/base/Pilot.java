@@ -197,8 +197,9 @@ public class Pilot extends Thread {
     }
     
     private void updateVerticalRate(){
-        if(myTCASTransponder.getTrafficType()!=TCASTransponder.resolutionAdvisory){
-            System.out.println("[PILOT] "+plane.getHexCode()+" Updating vertical rate");
+        double altitude = plane.getPosition().getAltitude();
+        if(myTCASTransponder.getTrafficType()!=TCASTransponder.resolutionAdvisory){           
+            //System.out.println("[PILOT] "+plane.getHexCode()+" Updating vertical rate");
             switch (flightPhase) {
                 case Pilot.TAXI:
                     plane.setVerticalRate(0);
@@ -208,17 +209,24 @@ public class Pilot extends Thread {
                     break;
                 case Pilot.CLIMB:
                     plane.setVerticalRate(climbRate);
-                    if (plane.getPosition().getAltitude()>cruiseAlt){
+                    if (altitude>cruiseAlt){
                         plane.getPosition().setAltitude(cruiseAlt);
                         this.flightPhase = CRUISE;
                     }
                     break;
-                case Pilot.CRUISE:
-                    plane.setVerticalRate(0);
+                case Pilot.CRUISE:     
+                    if (altitude>cruiseAlt+50){
+                        plane.setVerticalRate(-1000);
+                    }else if (altitude<cruiseAlt-50){
+                        plane.setVerticalRate(1000);
+                    }else{
+                        plane.setVerticalRate(0);
+                    }
+                    
                     break;
                 case Pilot.DESCENT:
                     plane.setVerticalRate(descentRate);
-                    if (plane.getPosition().getAltitude()<300){
+                    if (altitude<300){
                         this.flightPhase = this.flightPhase=Pilot.APPROACH;
                     }
                     break;
@@ -228,9 +236,9 @@ public class Pilot extends Thread {
                 case Pilot.LANDING:
                     plane.setVerticalRate(0);
                     break;
-            }
+            }      
         }
-        //System.out.println("Vertical Rate (ft/m): " + plane.getVerticalRate()+" Plane altitude (ft): " + plane.getPosition().getAltitude()+" Cruise alt(ft): "+cruiseAlt);
+        //System.out.println("[PILOT] "+plane.getHexCode()+" FF: "+ flightPhase+" Vertical Rate (ft/m): " + plane.getVerticalRate()+" Plane altitude (ft): " + altitude +" Cruise alt(ft): "+cruiseAlt);
     }
     
      /**

@@ -82,7 +82,7 @@ public class CreateCommand implements Command {
         //Create Pilot for the newly created aircraft.
         Pilot pilot = new Pilot(route,traffic,TrafficSimulated.FLY_ORTHODROMIC,simulation);
         pilot.initPhaseFlight();
-        pilot.setVerticalProfile(15000, 2000, -2000);
+        pilot.setVerticalProfile(15000, 2000, -1000);
         pilot.start();
         simulation.getPilotMap().put(traffic.getHexCode(), pilot);
         System.out.println("CREATE COMMAND EXECUTED !!");

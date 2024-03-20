@@ -56,39 +56,43 @@ public class TCASTransponder{
     public void iteration(){
         for (Map.Entry<String, Pilot> entry : pilotMap.entrySet()) {
             String hexCode = entry.getKey();
-            Pilot pilot = entry.getValue();
+            Pilot otherPilot = entry.getValue();
 
             // Skip the reference plane itself
             if (!hexCode.equals(ownHexCode)) {
                 // Calculate TCPA and CPA between the two planes.
-                computeTCASInterrogation(pilot.getPlane());
+                computeTCASInterrogation(otherPilot.getPlane());
                 
-                distanceToTraffic = ownTraffic.getPosition().getGreatCircleDistance(pilot.getPlane().getPosition());
+                distanceToTraffic = ownTraffic.getPosition().getGreatCircleDistance(otherPilot.getPlane().getPosition());
                 //update the traffic type (traffic advisory, resolution advisory based on TCPA)
-                updateTrafficType();
-
+                updateTrafficType(otherPilot);
+                
+                 
                 if (trafficType==resolutionAdvisory){
                     if(!pilotMap.get(ownHexCode).isOtherTCASSolvingRA()){
-                        handleResolutionAdvisory(pilot);
+                        handleResolutionAdvisory(otherPilot);
                     }
                 }
-                //Here I need to implement the logic to tell one pilot to make his plane climb and the other descent. 
-                // The problem is how do I make both TCAS work, should one block the other or what?
             }
         
         }
     }
     
-    public void updateTrafficType(){
+    public void updateTrafficType(Pilot otherPilot){
+        TCPA = Math.abs(TCPA);
         //Only enforce TA and RA if targets are within 6NM. It should be 6NM horizontally and within 1200ft.
         if(distanceToTraffic<6/Simulation.meterToNM){
             if(TCPA<25 && TCPA>0){
                 trafficType = resolutionAdvisory;
-            }else if(TCPA<40 && TCPA>0){
-                trafficType = trafficAdvisory;
+            }else if(TCPA<40 && TCPA>=25){
+                trafficType = trafficAdvisory;              
+            }else if(TCPA>=40){
+                trafficType = proximateTraffic;
             }
         }
     }
+    
+ 
     
     private void handleResolutionAdvisory(Pilot otherPilot) {
         //Avoid both the TCAS systems to solve the same advisory.
@@ -112,7 +116,7 @@ public class TCASTransponder{
         }
 
         // Logging for debug purposes
-        System.out.println("[TCAS] RA. Altitude" + ownTraffic.getHexCode()+" :"+ ownTraffic.getPosition().getAltitude() + " "+ ownTraffic.getVerticalRate()+" Altitude 2: " + otherPlane.getPosition().getAltitude() +" "+ otherPlane.getVerticalRate());
+        //System.out.println("[TCAS] RA. Altitude" + ownTraffic.getHexCode()+" :"+ ownTraffic.getPosition().getAltitude() + " "+ ownTraffic.getVerticalRate()+" Altitude 2: " + otherPlane.getPosition().getAltitude() +" "+ otherPlane.getVerticalRate());
     }
     
     private void computeTCASInterrogation(TrafficSimulated traffic2){
