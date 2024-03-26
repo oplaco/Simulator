@@ -27,6 +27,7 @@
  */
 package TFM;
 
+import TFM.navAids.Navaid;
 import TFM.polygons.Runway;
 import TFM.polygons.TakeOffSurface;
 import TFM.simulationEvents.SimulationEvent;
@@ -57,7 +58,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public class GUI {
-
+    
     public static class AppPanel extends JPanel {
 
         protected WorldWindow wwd;
@@ -264,38 +265,35 @@ public class GUI {
             this.setResizable(true);
             
 
-            //Insert layers in wwmap
+            //Insert layers in wwd
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getAnnotationLayer());
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getTrafficLayer());
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getTrafficPolygonLayer());
             
             RenderableLayer airportLayer = new RenderableLayer();
             airportLayer.setName("Airport Renderable Layer");
-                    
-            try {
-                List<Runway> runwayList = Runway.createRunwaysFromTextFile("src/airports/runways.txt");
-                for (Runway runway : runwayList) {      
-                    airportLayer.addRenderable(runway.getPolygon());
-                }
-                insertAfterPlacenames(this.getWwd(), airportLayer);
-                
-                RenderableLayer servitudesLayer = new RenderableLayer();
-                airportLayer.setName("Servitudes Layer");
+            RenderableLayer servitudesLayer = new RenderableLayer();
+            airportLayer.setName("Servitudes Layer");
+            IconLayer navAidLayer = new IconLayer();
+            navAidLayer.setName("NavAids Layer");
 
-                TakeOffSurface takeOffSurface = new TakeOffSurface(3000,runwayList.get(0).getRunwayStart(),200);
+            List<Runway> runwayList = Runway.createRunwaysFromDB("ES");
+            for (Runway runway : runwayList) {      
+                airportLayer.addRenderable(runway.getPolygon());
+                TakeOffSurface takeOffSurface = new TakeOffSurface(runway.getLength(),runway.getRunwayEnd(),runway.getBearing());
                 servitudesLayer.addRenderable(takeOffSurface.getPolygon());
-                insertAfterPlacenames(this.getWwd(), servitudesLayer);
-                
-            } catch (IOException ex) {
-                Logger.getLogger(GUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
             }
             
-
+            List<Navaid> navaidList = Navaid.createNDBsFromDB("ES");
+            for (Navaid navaid : navaidList) {      
+                navAidLayer.addIcon(navaid);
+            }
             
+            insertAfterPlacenames(this.getWwd(), airportLayer);
+            insertAfterPlacenames(this.getWwd(), servitudesLayer);
+            insertAfterPlacenames(this.getWwd(), navAidLayer); 
             
-            
-            //insertAfterPlacenames(this.getWwd(), new LatLonGraticuleLayer());             
-          
+            //insertAfterPlacenames(this.getWwd(), new LatLonGraticuleLayer());                       
             //insertAfterPlacenames(this.getWwd(), routeController.getPlanesLayer());
             //insertAfterPlacenames(this.getWwd(), routeController.getRouteLayer());
             //insertAfterPlacenames(this.getWwd(), routeController.getAirportLayer());

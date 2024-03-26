@@ -16,23 +16,34 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import TFM.utils.Config;
+import TFM.utils.UnitConversion;
 
 /**
  *
  * @author Gabriel
  */
 public class Runway {
-    private String name;
+    private String identifier;
     private String airport;
     private Polygon polygon;
     private Position runwayStart;
     private Position runwayEnd;
+    private double bearing; 
+    private double length;
     
-    public Runway(String name, String airport, Position start, Position end, double width){
+    public Runway(String identifier, String airport, Position start, Position end, double width, double length){
         this.runwayStart = start;
         this.runwayEnd = end;
-        this.name = name;
+        this.identifier = identifier;
+        this.bearing = getBearingFromIdentifier(identifier);
         this.airport = airport;
+        this.length = length;
 
         ArrayList<Position> pathPositions = calculateCorners(start, end,  width);
 
@@ -143,15 +154,71 @@ public class Runway {
                 Position endPosition = new Position(Angle.fromDegrees(endLat), Angle.fromDegrees(endLon), endElevation);
 
                 // Create the Runway object and add it to the list
-                runways.add(new Runway(airportCode,runwayName, startPosition, endPosition, width));
+                runways.add(new Runway(runwayName,airportCode, startPosition, endPosition, width, 3000));
             }
         }
 
         return runways;
     }
 
+    public static List<Runway> createRunwaysFromDB(String isoCountryCode) {
+        List<Runway> runways = new ArrayList<>();
+        String sql = "SELECT runways.* FROM runways " +
+                     "JOIN airports ON runways.airport_ref = airports.id " +
+                     "WHERE airports.iso_country = ?;";
 
+        try (Connection conn = DriverManager.getConnection(Config.dbUrl);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
+            String quotedIsoCountryCode = "\"" + isoCountryCode + "\""; // This will for example transform ES into "ES"
+            pstmt.setString(1, quotedIsoCountryCode); // Set the modified iso_country code in the query
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    // Read each field from the current record
+                    int id = rs.getInt("id");
+                    int airportRef = rs.getInt("airport_ref");
+                    String airportIdent = rs.getString("airport_ident");
+                    int lengthFt = rs.getInt("length_ft");
+                    int widthFt = rs.getInt("width_ft");
+                    String surface = rs.getString("surface");
+                    int lighted = rs.getInt("lighted");
+                    int closed = rs.getInt("closed");
+                    String leIdent = rs.getString("le_ident");
+                    double leLatitudeDeg = rs.getDouble("le_latitude_deg");
+                    double leLongitudeDeg = rs.getDouble("le_longitude_deg");
+                    int leElevationFt = rs.getInt("le_elevation_ft");
+                    double leHeadingDegT = rs.getDouble("le_heading_degT");
+                    int leDisplacedThresholdFt = rs.getInt("le_displaced_threshold_ft");
+                    String heIdent = rs.getString("he_ident");
+                    double heLatitudeDeg = rs.getDouble("he_latitude_deg");
+                    double heLongitudeDeg = rs.getDouble("he_longitude_deg");
+                    int heElevationFt = rs.getInt("he_elevation_ft");
+                    double heHeadingDegT = rs.getDouble("he_heading_degT");
+                    int heDisplacedThresholdFt = rs.getInt("he_displaced_threshold_ft");
+
+                    double width = widthFt*UnitConversion.ftToMeter;
+                    Position start = new Position(Angle.fromDegrees(leLatitudeDeg), Angle.fromDegrees(leLongitudeDeg), leElevationFt*UnitConversion.ftToMeter+5);
+                    Position end = new Position(Angle.fromDegrees(heLatitudeDeg), Angle.fromDegrees(heLongitudeDeg), heElevationFt*UnitConversion.ftToMeter+5);
+                    // Assuming the Runway class has a constructor that matches the data structure
+                    Runway runway = new Runway(leIdent,airportIdent,start,end,width, lengthFt*UnitConversion.ftToMeter);
+
+                    runways.add(runway);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return runways;
+    }
+
+    public double getBearingFromIdentifier(String identifier){
+        identifier = identifier.strip(); // Remove potential blank spaces
+        double bearing = Double.parseDouble(identifier.substring(0, 2))*10; //Remain only with the two first digits, for instance in 13L, remain only with 13.
+        return bearing;
+    }
+    
     public Polygon getPolygon() {
         return polygon;
     }
@@ -160,8 +227,8 @@ public class Runway {
         return airport;
     }
 
-    public String getName() {
-        return name;
+    public String getIdentifier() {
+        return identifier;
     }
 
     public Position getRunwayStart() {
@@ -171,4 +238,12 @@ public class Runway {
     public Position getRunwayEnd() {
         return runwayEnd;
     } 
+
+    public double getLength() {
+        return length;
+    }
+
+    public double getBearing() {
+        return bearing;
+    }
 }
