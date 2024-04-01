@@ -7,6 +7,8 @@ package classes.base;
 
 import TCAS.TCASTransponder;
 import static TCAS.TCASTransponder.resolutionAdvisory;
+import TFM.Atmosphere.AtmosphericModel;
+import TFM.Atmosphere.InternationalStandardAtmosphere;
 import TFM.Simulation;
 import classes.googleearth.GoogleEarthTraffic;
 import java.awt.Color;
@@ -52,6 +54,8 @@ public class Pilot extends Thread {
     public static final int APPROACH = 6; // Approach phase starts when the crew initiates changes in the aircraft’s configuration and/or speed in view of the landing. 
     public static final int LANDING = 7; // Landing phase begins when the aircraft is in the landing configuration and the crew is dedicated to land on a particular runway
     
+    //Atmosphere
+    private AtmosphericModel atmosphericModel;
     
     //Speeds
     private double cruiseSpeed = 560; // Knots
@@ -82,6 +86,8 @@ public class Pilot extends Thread {
         this.PaintInGoogleEarth = false;
         this.verbose = true; // informa por pantalla
         
+        this.atmosphericModel = new InternationalStandardAtmosphere();
+        
         //If vert profile not specified, assume its no used
         cruiseAlt=0;
         climbRate=0;
@@ -104,6 +110,8 @@ public class Pilot extends Thread {
         this.PaintInGoogleEarth = false;
         this.verbose = true; // informa por pantalla
         
+        this.atmosphericModel = new InternationalStandardAtmosphere();
+        
         //If vert profile not specified, assume its no used
         cruiseAlt=0;
         climbRate=0;
@@ -124,6 +132,8 @@ public class Pilot extends Thread {
         this.PaintInGoogleEarth = false;
         this.verbose = true; // informa por pantalla
         this.listener = listener;
+        
+        this.atmosphericModel = new InternationalStandardAtmosphere();
         
         //If vert profile not specified, assume its no used
         cruiseAlt=0;
