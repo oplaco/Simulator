@@ -7,6 +7,8 @@ package TFM.Atmosphere;
 /**
  *
  * @author Gabriel Alfonsín Espín
+ * 
+ * Layer information retrieved from @see  <a> href ="https://en.wikipedia.org/wiki/International_Standard_Atmosphere" </a>at 01/04/2024
  */
 public class InternationalStandardAtmosphere implements AtmosphericModel{
     // Define base constants
@@ -14,6 +16,7 @@ public class InternationalStandardAtmosphere implements AtmosphericModel{
     private static final double SEA_LEVEL_PRESSURE = 101325; // Pascals
     private static final double EARTH_GRAVITY = 9.80665; // m/s^2
     private static final double AIR_GAS_CONSTANT = 287.05; // J/(kg·K)
+    private static final double ADIABATIC_INDEX = 1.4; // 
     private static final double EARTH_RADIUS =  6356766;// nominal spherical earth radius (Meter)
     
     // Base geopotential altitude AMSL
@@ -105,11 +108,11 @@ public class InternationalStandardAtmosphere implements AtmosphericModel{
         
         double pressure;
         if(lapseRate==0){
-            pressure = basePressure*Math.pow(Math.E, -(EARTH_GRAVITY/(lapseRate*AIR_GAS_CONSTANT))*(geopotentialAltitude-baseAltitude));
+            pressure = basePressure*Math.pow(Math.E, -(EARTH_GRAVITY/(baseTemperature*AIR_GAS_CONSTANT))*(geopotentialAltitude-baseAltitude));
         }else{
             pressure = basePressure*Math.pow(temperature/baseTemperature, -EARTH_GRAVITY/(lapseRate*AIR_GAS_CONSTANT));
         }
-        
+
         return pressure;
     }
 
@@ -126,7 +129,7 @@ public class InternationalStandardAtmosphere implements AtmosphericModel{
         
         double density;
         if(lapseRate==0){
-            density = baseDensity*Math.pow(Math.E, -(EARTH_GRAVITY/(lapseRate*AIR_GAS_CONSTANT))*(geopotentialAltitude-baseAltitude));
+            density = baseDensity*Math.pow(Math.E, -(EARTH_GRAVITY/(baseTemperature*AIR_GAS_CONSTANT))*(geopotentialAltitude-baseAltitude));
         }else{
             density = baseDensity*Math.pow(temperature/baseTemperature, (-EARTH_GRAVITY/(lapseRate*AIR_GAS_CONSTANT))-1);
         }
@@ -144,5 +147,9 @@ public class InternationalStandardAtmosphere implements AtmosphericModel{
         
         return baseTemperature+lapseRate*(geopotentialAltitude-baseAltitude);
     }
-    
+
+    @Override
+    public double calculateSpeedOfSound(double AbsoluteTemperature) {
+        return Math.sqrt(ADIABATIC_INDEX*AIR_GAS_CONSTANT*AbsoluteTemperature);
+    }
 }

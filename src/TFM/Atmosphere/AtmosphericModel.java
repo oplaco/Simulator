@@ -12,4 +12,5 @@ public interface AtmosphericModel {
     public double calculatePressure(double GeometricAltitdue);
     public double calculateDensity(double GeometricAltitdue);
     public double calculateTemperature(double GeometricAltitdue);
+    public double calculateSpeedOfSound(double AbsoluteTemperature);
 }

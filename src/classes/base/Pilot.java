@@ -9,9 +9,13 @@ import TCAS.TCASTransponder;
 import static TCAS.TCASTransponder.resolutionAdvisory;
 import TFM.Atmosphere.AtmosphericModel;
 import TFM.Atmosphere.InternationalStandardAtmosphere;
+import TFM.Performance.AircraftSpecifications;
+import TFM.Performance.FlightPhase;
 import TFM.Simulation;
+import TFM.utils.UnitConversion;
 import classes.googleearth.GoogleEarthTraffic;
 import java.awt.Color;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -56,6 +60,9 @@ public class Pilot extends Thread {
     
     //Atmosphere
     private AtmosphericModel atmosphericModel;
+    
+    //Performance
+    private AircraftSpecifications aircraftSpecifications;
     
     //Speeds
     private double cruiseSpeed = 560; // Knots
@@ -104,13 +111,16 @@ public class Pilot extends Thread {
         this.routeMode = routeMode;
         this.simulation = simulation;
         this.waitTime = plane.getWaitTime() / 10;
-        System.out.println("Builder: "+plane.getSpeed() + " " + simulation.getElapsedSimulationTime());
+        System.out.println("Builderrrrrrrrr: "+plane.getSpeed() + " " + simulation.getElapsedSimulationTime());
+        System.out.println("Builderrrrrrrrr phase: "+ flightPhase);
         updateDistanceThreshold();
         this.running = true;
         this.PaintInGoogleEarth = false;
         this.verbose = true; // informa por pantalla
         
         this.atmosphericModel = new InternationalStandardAtmosphere();
+        
+        this.aircraftSpecifications = new AircraftSpecifications();
         
         //If vert profile not specified, assume its no used
         cruiseAlt=0;
@@ -147,6 +157,7 @@ public class Pilot extends Thread {
         this.flightPhase = TAKEOFFRUN; 
         this.plane.setSpeed(0);
     }
+    
     //Meters traveled each iteration
     private void updateDistanceThreshold(){
         distanceThreshold = 3*(plane.getSpeed() * Simulation.knotToMs) * simulation.getElapsedSimulationTime() /(1000);
@@ -453,9 +464,12 @@ public class Pilot extends Thread {
             distanceToTOD = route.getTodPos().getGreatCircleDistance(plane.getPosition());
             distanceToRunwayEnd = route.getDestination().getGreatCircleDistance(plane.getPosition()); 
             //System.out.println("Pilot of: "+plane.getHexCode()+"D to next wp: " + distance + "dThreshold: " + distanceThreshold+ " p alt: "+plane.getPosition().getAltitude());
-            //System.out.println("distance to TOD: "+distanceToTOD); 
-            //System.out.println("Flight phase: "+flightPhase); 
-   
+            System.out.println("[PILOT] Phase "+flightPhase); 
+            double geometricAltitude = plane.getPosition().getAltitude()*UnitConversion.ftToMeter;
+            System.out.println("[PILOT] Geometric h: " + geometricAltitude +
+                               " Temperature (K): " + atmosphericModel.calculateTemperature(geometricAltitude) +
+                               " Pressure (Pa): " + atmosphericModel.calculatePressure(geometricAltitude) +
+                               " Speed of sound: " + atmosphericModel.calculateSpeedOfSound(atmosphericModel.calculateTemperature(geometricAltitude)) );   
             if (distanceToTOD<distanceThreshold){
                 this.flightPhase = DESCENT;
             }
