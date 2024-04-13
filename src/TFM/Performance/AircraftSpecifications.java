@@ -4,7 +4,10 @@
  */
 package TFM.Performance;
 
+import TFM.Atmosphere.AtmosphericModel;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -12,42 +15,35 @@ import java.util.Map;
  * @author Gabriel Alfonsín Espín
  */
 public class AircraftSpecifications {
-    private Map<String, FlightPhase> flightPhases;
+    private double takeoffAcc;
+    private double landingAcc;
     private double wingSpan; // m
     private double length; // m
     private double height; // m
     
-    //Empty constructor method uses the A320 specs as default
-    public AircraftSpecifications() {
-        flightPhases = new HashMap<>();
-        this.getA320Specifications();
+    //Empty constructor method uses the A320 vertical profile as default and A320 accelerations
+    public AircraftSpecifications(AtmosphericModel atmosphericModel) {
+        this.takeoffAcc = 2.5;
+        this.landingAcc = -5;
     }
     
-    public AircraftSpecifications(Map<String, FlightPhase> phases) {
-        flightPhases = phases;
+    public double getWingSpan() {
+        return wingSpan;
     }
-    
-    public void addFlightPhase(String name, FlightPhase phase) {
-        flightPhases.put(name, phase);
+
+    public double getLength() {
+        return length;
     }
-    
-    public FlightPhase getFlightPhase(String name) {
-        return flightPhases.get(name);
+
+    public double getHeight() {
+        return height;
+    } 
+
+    public double getTakeoffAcc() {
+        return takeoffAcc;
     }
-    
-    // Other methods...
-    
-    public  void getA320Specifications() {
-        this.addFlightPhase("Takeoff", new FlightPhase(145,"IAS", 0)); // 
-        this.addFlightPhase("Initial Climb", new FlightPhase(175, "IAS",2500)); //
-        this.addFlightPhase("Climb (to FL150)", new FlightPhase(290, "IAS",2200)); //
-        this.addFlightPhase("Climb (to FL240)", new FlightPhase(290, "IAS",1400)); //
-        this.addFlightPhase("Mach Climb", new FlightPhase(0.78, "MACH",1000)); //
-        this.addFlightPhase("Cruise", new FlightPhase(0.79, "MACH",0)); //
-        this.addFlightPhase("Initial Descent (to FL240)", new FlightPhase(0.78, "MACH",-1000)); //
-        this.addFlightPhase("Descent (to FL100)", new FlightPhase(290, "IAS",-3500)); //
-        this.addFlightPhase("Approach", new FlightPhase(250, "IAS",-1500)); //
-        this.addFlightPhase("Landing", new FlightPhase(137, "IAS",-0)); //
-    
-    }
+
+    public double getLandingAcc() {
+        return landingAcc;
+    } 
 }

@@ -5,6 +5,7 @@
  */
 package classes.base;
 
+import TFM.Performance.VerticalProfile;
 import classes.googleearth.GoogleEarth;
 import gov.nasa.worldwind.WorldWind;
 import gov.nasa.worldwind.avlist.AVKey;
@@ -558,7 +559,7 @@ public class Route {
      * @param routeMode
      * @return 
      */
-    double getRouteLength(int routeMode)
+    public double getRouteLength(int routeMode)
     {
         if(routeMode==TrafficSimulated.FLY_ORTHODROMIC)
         {

@@ -84,7 +84,7 @@ public class RouteController implements TrafficSimulatedListener{
         FlightPlan fp;
 
         fp = new FlightPlan(fpname, route, this);               
-        fp.setVerticalProfile(cruiseAltitude,ascentRate, descentRate);
+        //fp.setVerticalProfile(cruiseAltitude,ascentRate, descentRate);
                
         fp.start();
         
@@ -120,11 +120,11 @@ public class RouteController implements TrafficSimulatedListener{
             FlightPlan fp = flightPlans.get(i);
             if(fp!=null)
             {
-                routeLayer.addRenderable(
-                        fp.getRoute().getPathDisplayer(this.altitudeScale,
-                        fp.getPilot().getTopOfClimb(),
-                        fp.getPilot().getTopOfDescent(),
-                        fp.getPilot().getRouteMode()));
+//                routeLayer.addRenderable(
+//                        fp.getRoute().getPathDisplayer(this.altitudeScale,
+//                        fp.getPilot().getTopOfClimb(),
+//                        fp.getPilot().getTopOfDescent(),
+//                        fp.getPilot().getRouteMode()));
                 
                 airportLayer.addIcons(fp.getRoute().getWpIndicators(this.altitudeScale));
             }

@@ -11,7 +11,10 @@ import TFM.Atmosphere.AtmosphericModel;
 import TFM.Atmosphere.InternationalStandardAtmosphere;
 import TFM.Performance.AircraftSpecifications;
 import TFM.Performance.FlightPhase;
+import TFM.Performance.VPSolver;
+import TFM.Performance.VerticalProfile;
 import TFM.Simulation;
+import TFM.utils.Constants;
 import TFM.utils.UnitConversion;
 import classes.googleearth.GoogleEarthTraffic;
 import java.awt.Color;
@@ -22,13 +25,13 @@ import java.util.logging.Logger;
 
 /**
  *
- * @author fms & Alfredo Torres Pons
+ * @author fms & Gabriel Alfonsín Espín
  */
 public class Pilot extends Thread {
      
     private Route route;
     private TrafficSimulated plane;
-    private int flightPhase;
+    private String flightPhase;
     private int routeMode; // ortho or loxodromic 
     private int waitTime; // in milliseg
     public double distanceThreshold; //Meters traveled each iteration
@@ -47,47 +50,25 @@ public class Pilot extends Thread {
     private Simulation simulation;
     private long lastSimulationTime;
     private long simulationTime;
-    
-    
-    //Flight Phases
-    public static final int TAXI = 1; //Taxi phase includes both taxi-out and taxi-in.
-    public static final int TAKEOFFRUN = 2; // Takeoff run phase begins when the crew increases thrust for the purpose of lift-off.
-    public static final int CLIMB = 3;
-    public static final int CRUISE = 4; // Cruise phase begins when the aircraft reaches the initial cruise altitude. It ends when the crew initiates a descent for the purpose of landing.
-    public static final int DESCENT = 5; // Initial descent phase starts when the crew leaves the cruise altitude in order to land
-    public static final int APPROACH = 6; // Approach phase starts when the crew initiates changes in the aircraft’s configuration and/or speed in view of the landing. 
-    public static final int LANDING = 7; // Landing phase begins when the aircraft is in the landing configuration and the crew is dedicated to land on a particular runway
-    
+
     //Atmosphere
     private AtmosphericModel atmosphericModel;
     
     //Performance
     private AircraftSpecifications aircraftSpecifications;
     
-    //Speeds
-    private double cruiseSpeed = 560; // Knots
-    private double takeoffSpeed = 160; // Knots
-    private double approachSpeed = 160; // Knots
-    
-    //Vertical profile
-    private double cruiseAlt = 15000; // feet
-    private double climbRate; // fpm
-    private double descentRate; // fpm
-    private double topOfClimb; // m
-    private double topOfDescent; // m
-        
+    //From flight plan
+    private VerticalProfile vp;
     
     //Distance estimator
     private int nextWp;
-    private double distanceInWpLeft; //distance left between next waypoint and destination
+    private double distanceInWpLeft; //distance left between next waypoint and destination     
     
-    public Pilot(Route route, TrafficSimulated plane, int routeMode ) {
+    public Pilot(Route route, TrafficSimulated plane, int routeMode) {
         this.route = route;
         this.plane = plane;
-        this.flightPhase = Pilot.CRUISE;
         this.routeMode = routeMode;
-        this.waitTime = plane.getWaitTime() / 2;
-        System.out.println("Builder: "+plane.getSpeed() + " " + simulation.getElapsedSimulationTime());
+        this.waitTime = plane.getWaitTime() / 10;
         updateDistanceThreshold();
         this.running = true;
         this.PaintInGoogleEarth = false;
@@ -95,24 +76,15 @@ public class Pilot extends Thread {
         
         this.atmosphericModel = new InternationalStandardAtmosphere();
         
-        //If vert profile not specified, assume its no used
-        cruiseAlt=0;
-        climbRate=0;
-        descentRate=0;
-        topOfClimb=0;
-        topOfDescent=0;
+        this.aircraftSpecifications = new AircraftSpecifications(atmosphericModel);      
     }
-        
 
-    public Pilot(Route route, TrafficSimulated plane, int routeMode , Simulation simulation) {
+    public Pilot(Route route, TrafficSimulated plane, int routeMode , Simulation simulation, VerticalProfile vp) {
         this.route = route;
         this.plane = plane;
-        this.flightPhase = Pilot.CRUISE;
         this.routeMode = routeMode;
         this.simulation = simulation;
         this.waitTime = plane.getWaitTime() / 10;
-        System.out.println("Builderrrrrrrrr: "+plane.getSpeed() + " " + simulation.getElapsedSimulationTime());
-        System.out.println("Builderrrrrrrrr phase: "+ flightPhase);
         updateDistanceThreshold();
         this.running = true;
         this.PaintInGoogleEarth = false;
@@ -120,21 +92,48 @@ public class Pilot extends Thread {
         
         this.atmosphericModel = new InternationalStandardAtmosphere();
         
-        this.aircraftSpecifications = new AircraftSpecifications();
-        
-        //If vert profile not specified, assume its no used
-        cruiseAlt=0;
-        climbRate=0;
-        descentRate=0;
-        topOfClimb=0;
-        topOfDescent=0;
+        this.aircraftSpecifications = new AircraftSpecifications(atmosphericModel);
+        this.vp = vp;
     }
+    
+    public void changeToNextPhase() {
+        Map<String, FlightPhase> flightPhases = vp.getFlightPhases();
 
+        // If flightPhase is null or not found in the map, set it to the first phase
+        if (flightPhase == null || !flightPhases.containsKey(flightPhase)) {
+            flightPhase = flightPhases.keySet().iterator().next();
+            this.plane.setSpeed(0);
+            updateParameters();
+            System.out.println("Setting flightPhase to the first phase: " + flightPhase);
+            //Initially calculate TOC and TOD
+            vp.getVps().updateTOCTOD();
+            return;
+        }
+   
+        boolean foundCurrent = false;
+        
+        for (String phaseName : flightPhases.keySet()) {
+            if (foundCurrent) {
+                // Found current phase, so set next phase as current
+                flightPhase = phaseName;
+                updateParameters();
+                System.out.println("Change to next phase from: " + foundCurrent + " to " + phaseName);
+                return;
+            }
+            if (phaseName.equals(flightPhase)) {
+                // Found current phase, set foundCurrent flag to true
+                foundCurrent = true;
+            }
+        }  
+        // If current phase is the last phase, wrap around to the first phase
+        flightPhase = flightPhases.keySet().iterator().next();
+    }
+    
     public Pilot(Route route, TrafficSimulated plane, int routeMode, PilotListener listener, Simulation simulation) {
         this.route = route;
         this.plane = plane;
         this.routeMode = routeMode;
-        this.flightPhase = Pilot.CRUISE;
+        this.flightPhase = "Cruise";
         this.simulation = simulation;
         this.waitTime = plane.getWaitTime() / 10;
         updateDistanceThreshold();
@@ -143,123 +142,51 @@ public class Pilot extends Thread {
         this.verbose = true; // informa por pantalla
         this.listener = listener;
         
-        this.atmosphericModel = new InternationalStandardAtmosphere();
-        
-        //If vert profile not specified, assume its no used
-        cruiseAlt=0;
-        climbRate=0;
-        descentRate=0;
-        topOfClimb=0;
-        topOfDescent=0;
+        this.atmosphericModel = new InternationalStandardAtmosphere();    
     }
     
-    public void initPhaseFlight(){
-        this.flightPhase = TAKEOFFRUN; 
-        this.plane.setSpeed(0);
-    }
+//    public void initPhaseFlight(){
+//        this.flightPhase = TAKEOFFRUN; 
+//        this.plane.setSpeed(0);
+//    }
     
     //Meters traveled each iteration
     private void updateDistanceThreshold(){
         distanceThreshold = 3*(plane.getSpeed() * Simulation.knotToMs) * simulation.getElapsedSimulationTime() /(1000);
     }
+    
     /**
-     * Uniformly accelerated rectilinear motion.
+     * Update the speed acording to the FlighPhase and transform it to TAS (True Air Speed).
      */
     private void updateSpeed(){
- 
-        double newSpeed;
+        FlightPhase currentFlightPhase = vp.getFlightPhases().get(flightPhase);
+        Double fligthPhaseSpeed = currentFlightPhase.getSpeed();
+        String speedType = currentFlightPhase.getSpeedType();
+        Double geometricAltitude = plane.getPosition().getAltitude();
+  
+        Double fligthPhaseTAS, planeTAS, TAS;
+        fligthPhaseTAS = atmosphericModel.calculateTAS(fligthPhaseSpeed, speedType, geometricAltitude);
+        planeTAS = plane.getSpeed();
         
-        switch (flightPhase) {
-            case TAXI:
-                plane.setSpeed(10);
-                break;
-                
-            case TAKEOFFRUN:
-                
-                newSpeed = plane.getSpeed() + plane.getTakeoffAcceleration()* (simulationTime-lastSimulationTime)/1000;
-                if (newSpeed>takeoffSpeed){
-                    newSpeed = takeoffSpeed;
-                    this.flightPhase = CLIMB;
-                }
-                plane.setSpeed(newSpeed);
-
-            case CLIMB:
-                newSpeed = plane.getSpeed() + plane.getClimbAcceleration()* (simulationTime-lastSimulationTime)/1000;
-                if (newSpeed<cruiseSpeed){
-                    plane.setSpeed(newSpeed);
-                }
-                break;
-                
-            case CRUISE:
-                plane.setSpeed(cruiseSpeed);
-                break;
-                
-            case DESCENT:
-                
-                newSpeed = plane.getSpeed() - plane.getClimbAcceleration()* (simulationTime-lastSimulationTime)/1000;
-                if (newSpeed>approachSpeed){
-                    plane.setSpeed(newSpeed);
-                }
-                break;
-            case APPROACH:
-                plane.setSpeed(approachSpeed);
-                break;
-            case LANDING:
-                newSpeed = plane.getSpeed() -plane.getTakeoffAcceleration()* (simulationTime-lastSimulationTime)/1000;
-                if (newSpeed>0){
-                    plane.setSpeed(newSpeed);
-                }else{
-                    plane.setSpeed(0);
-                }
-                break;
+        if(currentFlightPhase.getType() == FlightPhase.Type.TAKEOFF){
+            double newTAS = planeTAS + aircraftSpecifications.getTakeoffAcc()*(simulationTime-lastSimulationTime)/1000;
+            TAS = newTAS;
+        }else if(currentFlightPhase.getType() == FlightPhase.Type.LANDING){
+            double newTAS = planeTAS + aircraftSpecifications.getTakeoffAcc()*(simulationTime-lastSimulationTime)/1000;
+            TAS = newTAS;
+        } else {
+            TAS = fligthPhaseTAS;
         }
+        //System.out.println("[PILOT] "+plane.getHexCode()+ " Set speed (TAS) "+ TAS + " for fligh phase "+flightPhase);
+        plane.setSpeed(TAS);
         
-        //System.out.println("Pilot update speed: " + plane.getSpeed());
     }
     
     private void updateVerticalRate(){
-        double altitude = plane.getPosition().getAltitude();
-        if(myTCASTransponder.getTrafficType()!=TCASTransponder.resolutionAdvisory){           
-            //System.out.println("[PILOT] "+plane.getHexCode()+" Updating vertical rate");
-            switch (flightPhase) {
-                case Pilot.TAXI:
-                    plane.setVerticalRate(0);
-                    break;
-                case Pilot.TAKEOFFRUN:
-                    plane.setVerticalRate(0);
-                    break;
-                case Pilot.CLIMB:
-                    plane.setVerticalRate(climbRate);
-                    if (altitude>cruiseAlt){
-                        plane.getPosition().setAltitude(cruiseAlt);
-                        this.flightPhase = CRUISE;
-                    }
-                    break;
-                case Pilot.CRUISE:     
-                    if (altitude>cruiseAlt+50){
-                        plane.setVerticalRate(-1000);
-                    }else if (altitude<cruiseAlt-50){
-                        plane.setVerticalRate(1000);
-                    }else{
-                        plane.setVerticalRate(0);
-                    }
-                    
-                    break;
-                case Pilot.DESCENT:
-                    plane.setVerticalRate(descentRate);
-                    if (altitude<300){
-                        this.flightPhase = this.flightPhase=Pilot.APPROACH;
-                    }
-                    break;
-                case Pilot.APPROACH:
-                    plane.setVerticalRate(0);
-                    break;
-                case Pilot.LANDING:
-                    plane.setVerticalRate(0);
-                    break;
-            }      
-        }
-        //System.out.println("[PILOT] "+plane.getHexCode()+" FF: "+ flightPhase+" Vertical Rate (ft/m): " + plane.getVerticalRate()+" Plane altitude (ft): " + altitude +" Cruise alt(ft): "+cruiseAlt);
+        FlightPhase currentFlightPhase = vp.getFlightPhases().get(flightPhase);
+        Double climbingRate = currentFlightPhase.getClimbRate();
+        //System.out.println("[PILOT] "+plane.getHexCode()+ "Set climbrate "+ climbingRate + " for fligh phase "+flightPhase);
+        plane.setVerticalRate(climbingRate);
     }
     
      /**
@@ -270,165 +197,47 @@ public class Pilot extends Thread {
         updateVerticalRate();
         updateSpeed();
     }
-    /**
-     * Config vertical profile of the plane
-     * @param cruiseAltFt
-     * @param climbRateFpm
-     * @param descentRateFpm 
-     */
-    public void setVerticalProfile(double cruiseAltFt,double climbRateFpm,double descentRateFpm)
-    {
-        //Check input is valid
-        if(cruiseAltFt<= 0)
-        {
-            throw new RuntimeException("Pilot of "+plane.getHexCode()+": Cruise altitude should be positive");
-        }
-        if(climbRateFpm<= 0 )
-        {
-            throw new RuntimeException("Pilot of "+plane.getHexCode()+": Climb rate should be positive");
-        }
-        if(descentRateFpm >=0)
-        {
-            throw new RuntimeException("Pilot of "+plane.getHexCode()+": Descent rate should be negative");
-        }
-        this.cruiseAlt=cruiseAltFt;
-        this.climbRate=climbRateFpm;
-        this.descentRate=descentRateFpm;    
-        
-        this.updateTOCTOD();
-    }
     
-   
-    /**
-     * Calculate and update TOCTOD based on vertical profile input
-     * Also computes between which wp is located 
+     /**
+     * Calculates the total distance (following the route) remaining to the destination which is equal 
+     * to the remaining distance to the next waypoint + the distance from that waypoint to the destination throught
+     * the rest of waypoints.
+     * @return 
      */
-    private void updateTOCTOD()
+    public double getDistanceLeft()
     {
-        
-        //Parametros de calculo de TOC y TOD
-        double V = cruiseSpeed*Simulation.knotToMs;
-        double vy1=climbRate*Simulation.ftToMeter/60;
-        double vy2=Math.abs(descentRate)*Simulation.ftToMeter/60;
-        double k1 = vy1/V;
-        double k2= vy2/V;
-        double D = route.getRouteLength(routeMode);
-        double H = cruiseAlt*Simulation.ftToMeter;
-        
-        
-        //Se calcula el punto del TOC y TOD como la intersección entre tres rectas
-        //La recta de ascenso, la de descenso y la de crucero.
-        //Si se intersecta antes el TOD con el TOC que con la de crucero,
-        //no se llega a altitud de crucero
-        double x_intersect = (k2*D)/(k1+k2);
-        double h_intersect = k1*x_intersect;
-        double x_TOC = H/k1;
-        double x_TOD = (k2*D-H)/k2;
-        
-        //Muestra la posición del TOC y TOD
-        System.out.println("x intersect = " + Double.toString(x_intersect));
-        System.out.println("x TOC = " + Double.toString(x_TOC));
-        System.out.println("x TOD = " + Double.toString(x_TOD));
-        
-        //Comprueba si se alcanza la altitud de crucero
-        if(x_TOC>x_TOD)
+        double distToNext=0;
+        if(nextWp >= 0)
         {
-            this.topOfClimb=x_intersect;
-            this.topOfDescent=x_intersect;
-            this.cruiseAlt = h_intersect/Simulation.ftToMeter;
+            distToNext = plane.getPosition().getGreatCircleDistance(route.getWp()[nextWp]);          
         }
         else
         {
-            this.topOfClimb=x_TOC;
-            this.topOfDescent=x_TOD;
+            distToNext = plane.getPosition().getGreatCircleDistance(route.getDestination());
         }
-        
-        
-       
-        //Obten el WP del TOC y el TOD
-        int tocWP = route.getLastWpIndexByDistance(this.topOfClimb, this.routeMode);
-        
-        int todWP = route.getLastWpIndexByDistance(topOfDescent, this.routeMode);
-        
-        //Distancias hasta TOC y TOD
-        double distwptoc = route.getDistanceToWp(tocWP, routeMode);
-        double distwptod = route.getDistanceToWp(todWP, routeMode);
-        
-        double distTocToWP = topOfClimb-distwptoc;
-        double distTodToWP = topOfDescent-distwptod;
-        
-       
-        //Set el TOC y TOD de la ruta (3D)
-        route.setTOCTOD(cruiseAlt*Simulation.ftToMeter, tocWP, tocWP+1, distTocToWP, true);
-        route.setTOCTOD(cruiseAlt*Simulation.ftToMeter, todWP, todWP+1, distTodToWP, false);
+        return distToNext + distanceInWpLeft;
 
-        
-        
-        //Configura la altitud de los waypoints intermedios
-        for(int i = 0;i<route.getWp().length;i++)
-        {
-            WayPoint wp = route.getWp()[i];
-            double distWp = route.getDistanceToWp(i, routeMode);
-            
-            //Si se ha llegado el TOC
-            if(distWp<topOfClimb)
-            {
-                double altitud = k1*distWp;
-                wp.setAltitude(altitud);
-            }
-            //Si se ha llegado al TOD
-            else if(distWp>topOfDescent)
-            {
-                double altitud = k2*(D-distWp);
-                wp.setAltitude(altitud);
-            }
-            //Si se esta en crucero
-            else
-            {
-                wp.setAltitude(cruiseAlt*Simulation.ftToMeter);
-            }  
-        }
-        
-        if(verbose)
-        {
-            System.out.print("[PILOT OF " + plane + "]: Set top of Climb: "
-            +String.format("%.2f",topOfClimb/1852)+ " NM");
-            
-            if(tocWP>=0)
-            {
-                System.out.println(" -> "+ String.format("%.2f",distTocToWP/1852.0)
-                        + "NM after WayPoint: "+ route.getWp()[tocWP].getLocationName());
-            }
-            else if(tocWP == -1)
-            {
-                System.out.println("-> after departure ");
-            }
-            else
-            {
-                System.out.println("-> outside of route");
-            }
-            
-         
-            System.out.print("[PILOT OF " + plane + "]: Set top of Descent: "
-            +String.format("%.2f",topOfDescent/1852)+ " NM");
-            
-            if(todWP>=0)
-            {
-                System.out.println(" -> "+ String.format("%.2f",distTodToWP/1852.0)
-                        + "NM after WayPoint: "+ route.getWp()[todWP].getLocationName());
-            }
-            else if(todWP == -1)
-            {
-                System.out.println("-> after departure ");
-            }
-            else
-            {
-                System.out.println("-> outside of route");
-            }
-        }
-        
     }
-
+    
+    /**
+     * Calculates the distance (following the route) from the next Waypoint to next Waypoint until the destionation.
+     *   ...  plane ---W4---W5---destination
+     * @return 
+     */
+    private double getDistanceInWp()
+    {
+        double distancewp = 0;
+        if(nextWp >= 0)
+        {
+            for(int i = nextWp+1; i<route.getWp().length;i++)
+            {
+                distancewp += route.getWp()[i-1].getGreatCircleDistance(route.getWp()[i]);
+            }
+            distancewp += route.getWp()[route.getWp().length-1].getGreatCircleDistance(route.getDestination());
+        }
+        return distancewp;
+    }
+     
     public void fly(Coordinate to) {
 
         if (verbose) {
@@ -464,18 +273,14 @@ public class Pilot extends Thread {
             distanceToTOD = route.getTodPos().getGreatCircleDistance(plane.getPosition());
             distanceToRunwayEnd = route.getDestination().getGreatCircleDistance(plane.getPosition()); 
             //System.out.println("Pilot of: "+plane.getHexCode()+"D to next wp: " + distance + "dThreshold: " + distanceThreshold+ " p alt: "+plane.getPosition().getAltitude());
-            System.out.println("[PILOT] Phase "+flightPhase); 
-            double geometricAltitude = plane.getPosition().getAltitude()*UnitConversion.ftToMeter;
-            System.out.println("[PILOT] Geometric h: " + geometricAltitude +
-                               " Temperature (K): " + atmosphericModel.calculateTemperature(geometricAltitude) +
-                               " Pressure (Pa): " + atmosphericModel.calculatePressure(geometricAltitude) +
-                               " Speed of sound: " + atmosphericModel.calculateSpeedOfSound(atmosphericModel.calculateTemperature(geometricAltitude)) );   
-            if (distanceToTOD<distanceThreshold){
-                this.flightPhase = DESCENT;
-            }
-            if (distanceToRunwayEnd<3000){
-                this.flightPhase = LANDING;
-            }
+            //System.out.println("[PILOT] Phase "+flightPhase); 
+            double geometricAltitude = plane.getPosition().getAltitude();
+//            System.out.println("[PILOT] Geometric h (ft): " + geometricAltitude/UnitConversion.ftToMeter +
+//                               " Temperature (K): " + atmosphericModel.calculateTemperature(geometricAltitude) +
+//                               " Pressure (Pa): " + atmosphericModel.calculatePressure(geometricAltitude) +
+//                               " Speed of sound: " + atmosphericModel.calculateSpeedOfSound(atmosphericModel.calculateTemperature(geometricAltitude)) );   
+//            System.out.println("[PILOT] distance "+distance + "distanceThreshold" + distanceThreshold); 
+            flightPhase = vp.checkFlightPhase(flightPhase, plane.getSpeed(), geometricAltitude, distanceToTOD, distanceThreshold);
             
             
             //Leave while if plane is stopped
@@ -552,79 +357,7 @@ public class Pilot extends Thread {
         }
 
     }
-    
-    public int getFlightPhase()
-    {
-        // return-> 0: crucero, -1: descenso, 1 ascenso
-        //If cruise Alt is 0, vertical profile not used, Always in cruise
-        if(cruiseAlt==0)
-        {
-            return 0;
-        }
-  
-        
-        double dist_to_start = plane.getTraveled();
-        
-        
-        double descAltError = Math.abs(TrafficSimulated.SAMPLE_TIME*descentRate)*Simulation.ftToMeter;
-        
-        //Take Wp into acount and calculates All distances in each iteration
-        //Its expensive, and should only update the distance left to next waypoint
-        
-        if(dist_to_start < topOfClimb)
-        {
-            return 1;
-        }
-        if(dist_to_start >= topOfDescent && plane.getPosition().getAltitude() >= descAltError)
-        {
-            return -1;
-        }
-
-
-        return 0;
-    }
-    
-    /**
-     * Calculates the total distance (following the route) remaining to the destination which is equal 
-     * to the remaining distance to the next waypoint + the distance from that waypoint to the destination throught
-     * the rest of waypoints.
-     * @return 
-     */
-    public double getDistanceLeft()
-    {
-        double distToNext=0;
-        if(nextWp >= 0)
-        {
-            distToNext = plane.getPosition().getGreatCircleDistance(route.getWp()[nextWp]);          
-        }
-        else
-        {
-            distToNext = plane.getPosition().getGreatCircleDistance(route.getDestination());
-        }
-        return distToNext + distanceInWpLeft;
-
-    }
-    
-    /**
-     * Calculates the distance (following the route) from the next Waypoint to next Waypoint until the destionation.
-     *   ...  plane ---W4---W5---destination
-     * @return 
-     */
-    private double getDistanceInWp()
-    {
-        double distancewp = 0;
-        if(nextWp >= 0)
-        {
-            for(int i = nextWp+1; i<route.getWp().length;i++)
-            {
-                distancewp += route.getWp()[i-1].getGreatCircleDistance(route.getWp()[i]);
-            }
-            distancewp += route.getWp()[route.getWp().length-1].getGreatCircleDistance(route.getDestination());
-        }
-        return distancewp;
-    }
-    
-    
+       
     public void paint(String fileName, String altMode, Color col, int tick) {
         PaintInGoogleEarth = true;
 
@@ -645,13 +378,6 @@ public class Pilot extends Thread {
         plane.startit();
     } 
     
-    public double getTopOfClimb() {
-        return topOfClimb;
-    }
-
-    public double getTopOfDescent() {
-        return topOfDescent;
-    }
     public int getRouteMode()
     {
         return routeMode;

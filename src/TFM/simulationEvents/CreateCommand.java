@@ -3,6 +3,8 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package TFM.simulationEvents;
+import TFM.Atmosphere.InternationalStandardAtmosphere;
+import TFM.Performance.VerticalProfile;
 import TFM.Simulation;
 import classes.base.Coordinate;
 import classes.base.Pilot;
@@ -79,12 +81,17 @@ public class CreateCommand implements Command {
         }
         simulation.getTrafficSimulationMap().putTraffic( traffic);
 
+        VerticalProfile vp = new VerticalProfile(new InternationalStandardAtmosphere(),route,TrafficSimulated.FLY_ORTHODROMIC,traffic);
+        
         //Create Pilot for the newly created aircraft.
-        Pilot pilot = new Pilot(route,traffic,TrafficSimulated.FLY_ORTHODROMIC,simulation);
-        pilot.initPhaseFlight();
-        pilot.setVerticalProfile(15000, 2000, -1000);
+        Pilot pilot = new Pilot(route,traffic,TrafficSimulated.FLY_ORTHODROMIC,simulation, vp);
+        // Set the FlightPhase to the first one.
+        pilot.changeToNextPhase();
+        //pilot.initPhaseFlight();
         pilot.start();
         simulation.getPilotMap().put(traffic.getHexCode(), pilot);
+        
+        
         System.out.println("CREATE COMMAND EXECUTED !!");
     }
 }

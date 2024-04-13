@@ -4,6 +4,9 @@
  */
 package TFM.Atmosphere;
 
+import TFM.utils.Constants;
+import TFM.utils.UnitConversion;
+
 /**
  *
  * @author Gabriel Alfonsín Espín
@@ -11,14 +14,7 @@ package TFM.Atmosphere;
  * Layer information retrieved from @see  <a> href ="https://en.wikipedia.org/wiki/International_Standard_Atmosphere" </a>at 01/04/2024
  */
 public class InternationalStandardAtmosphere implements AtmosphericModel{
-    // Define base constants
-    private static final double SEA_LEVEL_TEMPERATURE = 288.15; // Kelvin
-    private static final double SEA_LEVEL_PRESSURE = 101325; // Pascals
-    private static final double EARTH_GRAVITY = 9.80665; // m/s^2
-    private static final double AIR_GAS_CONSTANT = 287.05; // J/(kg·K)
-    private static final double ADIABATIC_INDEX = 1.4; // 
-    private static final double EARTH_RADIUS =  6356766;// nominal spherical earth radius (Meter)
-    
+
     // Base geopotential altitude AMSL
     private static final double TROPOPAUSE_ALTITUDE = 11000; // Initial Geopotential Altitude (Meter)
     private static final double STRATOSPHERE_1_ALTITUDE = 20000; // Initial Geopotential Altitude (Meter)
@@ -29,7 +25,7 @@ public class InternationalStandardAtmosphere implements AtmosphericModel{
     private static final double MESOPAUSE_ALTITUDE = 84852; // Initial Geopotential Altitude (Meter)    
     
     private double calculateGeopotentialAltitude(double GeometricAltitdue){
-        return EARTH_RADIUS*GeometricAltitdue/(EARTH_RADIUS+GeometricAltitdue);
+        return Constants.EARTH_RADIUS*GeometricAltitdue/(Constants.EARTH_RADIUS+GeometricAltitdue);
     }
     
     private double[] getBaseParameters(double GeopotentialAltitude){
@@ -42,8 +38,8 @@ public class InternationalStandardAtmosphere implements AtmosphericModel{
         
         if (GeopotentialAltitude>=0 && GeopotentialAltitude<TROPOPAUSE_ALTITUDE){
             lapseRate =-6.5;
-            baseTemperature = SEA_LEVEL_TEMPERATURE;
-            basePressure = SEA_LEVEL_PRESSURE;
+            baseTemperature = Constants.SEA_LEVEL_TEMPERATURE;
+            basePressure = Constants.SEA_LEVEL_PRESSURE;
             baseDensity = 1.225;
             baseAltitude = 0;
         } else if(GeopotentialAltitude>=TROPOPAUSE_ALTITUDE && GeopotentialAltitude<STRATOSPHERE_1_ALTITUDE){
@@ -108,9 +104,9 @@ public class InternationalStandardAtmosphere implements AtmosphericModel{
         
         double pressure;
         if(lapseRate==0){
-            pressure = basePressure*Math.pow(Math.E, -(EARTH_GRAVITY/(baseTemperature*AIR_GAS_CONSTANT))*(geopotentialAltitude-baseAltitude));
+            pressure = basePressure*Math.pow(Math.E, -(Constants.EARTH_GRAVITY/(baseTemperature*Constants.AIR_GAS_CONSTANT))*(geopotentialAltitude-baseAltitude));
         }else{
-            pressure = basePressure*Math.pow(temperature/baseTemperature, -EARTH_GRAVITY/(lapseRate*AIR_GAS_CONSTANT));
+            pressure = basePressure*Math.pow(temperature/baseTemperature, -Constants.EARTH_GRAVITY/(lapseRate*Constants.AIR_GAS_CONSTANT));
         }
 
         return pressure;
@@ -129,9 +125,9 @@ public class InternationalStandardAtmosphere implements AtmosphericModel{
         
         double density;
         if(lapseRate==0){
-            density = baseDensity*Math.pow(Math.E, -(EARTH_GRAVITY/(baseTemperature*AIR_GAS_CONSTANT))*(geopotentialAltitude-baseAltitude));
+            density = baseDensity*Math.pow(Math.E, -(Constants.EARTH_GRAVITY/(baseTemperature*Constants.AIR_GAS_CONSTANT))*(geopotentialAltitude-baseAltitude));
         }else{
-            density = baseDensity*Math.pow(temperature/baseTemperature, (-EARTH_GRAVITY/(lapseRate*AIR_GAS_CONSTANT))-1);
+            density = baseDensity*Math.pow(temperature/baseTemperature, (-Constants.EARTH_GRAVITY/(lapseRate*Constants.AIR_GAS_CONSTANT))-1);
         }
         
         return density;    
@@ -150,6 +146,47 @@ public class InternationalStandardAtmosphere implements AtmosphericModel{
 
     @Override
     public double calculateSpeedOfSound(double AbsoluteTemperature) {
-        return Math.sqrt(ADIABATIC_INDEX*AIR_GAS_CONSTANT*AbsoluteTemperature);
+        return Math.sqrt(Constants.ADIABATIC_INDEX*Constants.AIR_GAS_CONSTANT*AbsoluteTemperature);
     }
+    
+    /*
+    Calulates the TAS (True Air Speed) in kts
+    */
+    @Override
+    public double calculateTAS(double speed, String speedType, double geometricAltitude) {
+        double TAS,temperature,mach;
+        if (speedType!="MACH"){
+            speed = speed*UnitConversion.knotToMs;
+        }
+        
+        if (null == speedType){
+            throw new RuntimeException("International Standard Atmosphere model received a NULL speedType ");
+        } else switch (speedType) {
+            case "TAS":
+                TAS = speed;
+                break;
+            case "IAS":              
+                TAS = speed*((geometricAltitude/(UnitConversion.ftToMeter*1000)*1.02)/100+1); // Rule of thumb for TAS and IAS
+                //Proper calculations for compressible fluid (M>0.3) requires numeric methods.
+                break;
+            case "MACH":
+                mach = speed;
+                temperature = this.calculateTemperature(geometricAltitude);
+                TAS = mach*this.calculateSpeedOfSound(temperature);
+                break;
+            default:
+                throw new RuntimeException("International Standard Atmosphere model speedType "+speedType + "not supported");
+        }
+        return TAS/UnitConversion.knotToMs;
+    }
+    
+    private static double calculateDynamicPressure(double mach, double staticPressure) {
+        // Calculate dynamic pressure from Mach number and static pressure
+        double a,b,c,d;
+        a = Math.pow(mach, 2.0);
+        b = (1.0+0.2*Math.pow(mach, 2.0));
+        c = Math.pow((1.0+0.2*Math.pow(mach, 2.0)),7.0/2.0);
+        return staticPressure * (Math.pow((1.0+0.2*Math.pow(mach, 2.0)),7.0/2.0)-1.0);
+    }
+
 }

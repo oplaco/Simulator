@@ -7,6 +7,7 @@ package classes.base;
 
 import TFM.Simulation;
 import TFM.TrafficIcon;
+import TFM.utils.UnitConversion;
 import classes.googleearth.GoogleEarthTraffic;
 import gov.nasa.worldwind.geom.Vec4;
 import gov.nasa.worldwind.render.UserFacingIcon;
@@ -288,7 +289,7 @@ public class TrafficSimulated extends Thread {
             //Adapt waitTime accordingly to simulation speed.
             waitTime = (int)Math.round( (double) THREAD_TIME/simulation.getSpeed());
 
-            distance = (speed * 1852 / 3600) * timeStepDelta  /1000; // in meters traveled in each iteration 
+            distance = speed * UnitConversion.knotToMs * timeStepDelta  /1000; // in meters traveled in each iteration 
 
             traveled += distance; // total distance
 
@@ -296,8 +297,8 @@ public class TrafficSimulated extends Thread {
             if (routeMode == FLY_ORTHODROMIC) {
                 course = position.getGreatCircleInitialBearing(target);
             }
-            altitude = position.getAltitude() + verticalRate * timeStepDelta  / (1000*60);
-            System.out.println("[PLANE] "+this.getHexCode() + " Altitude (ft): " +altitude + " verticalRate" + verticalRate);
+            altitude = position.getAltitude() + verticalRate * timeStepDelta  / (1000*60)*UnitConversion.ftToMeter;
+            System.out.println("[PLANE] "+this.getHexCode() + " Altitude (ft): " +altitude/UnitConversion.ftToMeter + " verticalRate" + verticalRate);
             position.setAltitude(altitude); //in meters
 
             lastSimulationTime = tmpTime;
