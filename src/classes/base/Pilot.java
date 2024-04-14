@@ -9,6 +9,8 @@ import TCAS.TCASTransponder;
 import static TCAS.TCASTransponder.resolutionAdvisory;
 import TFM.Atmosphere.AtmosphericModel;
 import TFM.Atmosphere.InternationalStandardAtmosphere;
+import TFM.Models.BearingStrategy;
+import TFM.Models.SimpleBearingStrategy;
 import TFM.Performance.AircraftSpecifications;
 import TFM.Performance.FlightPhase;
 import TFM.Performance.VPSolver;
@@ -16,6 +18,7 @@ import TFM.Performance.VerticalProfile;
 import TFM.Simulation;
 import TFM.utils.Constants;
 import TFM.utils.UnitConversion;
+import static classes.base.TrafficSimulated.FLY_LOXODROMIC;
 import classes.googleearth.GoogleEarthTraffic;
 import java.awt.Color;
 import java.util.Map;
@@ -41,6 +44,10 @@ public class Pilot extends Thread {
     private boolean PaintInGoogleEarth;
     private PilotListener listener = null;
     private Coordinate to; // Current plane destination.
+    
+    //Bearing/Course
+    private BearingStrategy sbs;
+    private double targetBearing;
     
     // TCAS
     private TCASTransponder myTCASTransponder;
@@ -75,6 +82,7 @@ public class Pilot extends Thread {
         this.verbose = true; // informa por pantalla
         
         this.atmosphericModel = new InternationalStandardAtmosphere();
+        this.sbs = new SimpleBearingStrategy();
         
         this.aircraftSpecifications = new AircraftSpecifications(atmosphericModel);      
     }
@@ -91,6 +99,7 @@ public class Pilot extends Thread {
         this.verbose = true; // informa por pantalla
         
         this.atmosphericModel = new InternationalStandardAtmosphere();
+        this.sbs = new SimpleBearingStrategy();
         
         this.aircraftSpecifications = new AircraftSpecifications(atmosphericModel);
         this.vp = vp;
@@ -245,7 +254,9 @@ public class Pilot extends Thread {
             System.out.println("[PILOT OF " + plane + "]: waiting...");
         }
         distanceInWpLeft = getDistanceInWp();
+
         plane.flyit(to, routeMode);
+        
         double distance = to.getRhumbLineDistance(plane.getPosition());
         double distanceToTOD;
         double distanceToRunwayEnd;
@@ -263,10 +274,19 @@ public class Pilot extends Thread {
                     }
                 }
             }
-            
+                                        
             // Code inside the loop
-            simulationTime = this.simulation.getSimulationTime();
+            simulationTime = this.simulation.getSimulationTime(); //First line
    
+            
+            if (routeMode == FLY_LOXODROMIC) {
+                targetBearing = plane.getPosition().getRhumbLineBearing(to);
+            } else {
+                targetBearing = plane.getPosition().getGreatCircleInitialBearing(to);
+            }
+            double nextBearing = sbs.calculateBearing(plane.getCourse(), targetBearing, simulationTime-lastSimulationTime);
+            plane.setCourse(nextBearing);
+            
             myTCASTransponder.iteration();
 
             updateDistanceThreshold();
@@ -297,7 +317,7 @@ public class Pilot extends Thread {
                 Logger.getLogger(Pilot.class
                         .getName()).log(Level.SEVERE, null, ex);
             }
-            lastSimulationTime = simulationTime;
+            lastSimulationTime = simulationTime; //Last line
         }
         if (verbose) {
             System.out.println("[PILOT]: ****[" + plane + "] in " + to.getLocationName() + " (estimated leg error: " + Math.round(distance) + " meters)");

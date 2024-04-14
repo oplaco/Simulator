@@ -162,7 +162,7 @@ public class GUI {
             this.wwjPanel.setPreferredSize(canvasSize);
 
             //Reading the events from testing file to create the default simulation.
-            String filePath = "src/simulation files/oneplane.csv"; 
+            String filePath = "src/simulation files/threeplane.csv"; 
             List<SimulationEvent> events = SimulationFileReader.readCSVFile(filePath);
             this.trafficDisplayer = new TrafficDisplayer(this.getWwd());
             addSimulation("DefaultSimulation", new Simulation(events, this.trafficDisplayer));

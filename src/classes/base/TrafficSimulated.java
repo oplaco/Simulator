@@ -220,13 +220,13 @@ public class TrafficSimulated extends Thread {
     }
     
     public void flyit(Coordinate target, int routeMode) {
-        this.target = target;
-        this.routeMode = routeMode;
-        if (routeMode == FLY_LOXODROMIC) {
-            course = position.getRhumbLineBearing(target);
-        } else {
-            course = position.getGreatCircleInitialBearing(target);
-        }
+//        this.target = target;
+//        this.routeMode = routeMode;
+//        if (routeMode == FLY_LOXODROMIC) {
+//            course = position.getRhumbLineBearing(target);
+//        } else {
+//            course = position.getGreatCircleInitialBearing(target);
+//        }
         if (!this.moving) { // if is flying continues            
             this.moving = true;
             this.start();
@@ -431,6 +431,9 @@ public class TrafficSimulated extends Thread {
     public void setFollowed(boolean followed) {
         this.followed = followed;
     }
-    
-    
+
+    public void setCourse(double course) {
+        this.course = course;
+    }
+
 }
