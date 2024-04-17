@@ -6,6 +6,7 @@ package TCAS;
 
 import TFM.Simulation;
 import TFM.TrafficSimulationMap;
+import TFM.utils.UnitConversion;
 import classes.base.Coordinate;
 import classes.base.Pilot;
 import classes.base.TrafficSimulated;
@@ -81,7 +82,7 @@ public class TCASTransponder{
     public void updateTrafficType(Pilot otherPilot){
         TCPA = Math.abs(TCPA);
         //Only enforce TA and RA if targets are within 6NM. It should be 6NM horizontally and within 1200ft.
-        if(distanceToTraffic<6/Simulation.meterToNM){
+        if(distanceToTraffic<6/UnitConversion.meterToNM){
             if(TCPA<25 && TCPA>0){
                 trafficType = resolutionAdvisory;
             }else if(TCPA<40 && TCPA>=25){
@@ -91,8 +92,7 @@ public class TCASTransponder{
             }
         }
     }
-    
- 
+
     
     private void handleResolutionAdvisory(Pilot otherPilot) {
         //Avoid both the TCAS systems to solve the same advisory.
@@ -116,7 +116,7 @@ public class TCASTransponder{
         }
 
         // Logging for debug purposes
-        //System.out.println("[TCAS] RA. Altitude" + ownTraffic.getHexCode()+" :"+ ownTraffic.getPosition().getAltitude() + " "+ ownTraffic.getVerticalRate()+" Altitude 2: " + otherPlane.getPosition().getAltitude() +" "+ otherPlane.getVerticalRate());
+        System.out.println("[TCAS] RA. Altitude" + ownTraffic.getHexCode()+" :"+ ownTraffic.getPosition().getAltitude() + " "+ ownTraffic.getVerticalRate()+" Altitude 2: " + otherPlane.getPosition().getAltitude() +" "+ otherPlane.getVerticalRate());
     }
     
     private void computeTCASInterrogation(TrafficSimulated traffic2){
@@ -153,9 +153,9 @@ public class TCASTransponder{
         Double speed,course,speedNorth,speedEast,speedDown;
         speed = traffic.getSpeed();
         course = traffic.getCourse();
-        speedNorth = speed*Math.cos(course)*Simulation.knotToMs;
-        speedEast = speed*Math.sin(course)*Simulation.knotToMs;
-        speedDown = - traffic.getVerticalRate()*Simulation.ftMinToMs;
+        speedNorth = speed*Math.cos(course)*UnitConversion.knotToMs;
+        speedEast = speed*Math.sin(course)*UnitConversion.knotToMs;
+        speedDown = - traffic.getVerticalRate()*UnitConversion.ftMinToMs;
         //System.out.println("speedNorth (m/s): "+speedNorth+" speedEast (m/s): "+speedEast+" speedDown (m/s): "+speedDown);
         
         double[] NEDSpeed = {speedNorth, speedEast, speedDown};
@@ -236,7 +236,7 @@ public class TCASTransponder{
                 gov.nasa.worldwind.geom.Position.fromDegrees(
                         pos.getLatitude(), 
                         pos.getLongitude(),
-                        pos.getAltitude()*Simulation.ftToMeter);
+                        pos.getAltitude()*UnitConversion.ftToMeter);
         return nasa_pos;
     }
 

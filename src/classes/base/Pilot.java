@@ -5,6 +5,7 @@
  */
 package classes.base;
 
+import TFM.Routes.Route;
 import TCAS.TCASTransponder;
 import static TCAS.TCASTransponder.resolutionAdvisory;
 import TFM.Atmosphere.AtmosphericModel;
@@ -115,7 +116,7 @@ public class Pilot extends Thread {
             updateParameters();
             System.out.println("Setting flightPhase to the first phase: " + flightPhase);
             //Initially calculate TOC and TOD
-            vp.getVps().updateTOCTOD();
+            vp.getVps().updateTOCTOD(route.getCruiseSpeed());
             return;
         }
    
@@ -161,7 +162,7 @@ public class Pilot extends Thread {
     
     //Meters traveled each iteration
     private void updateDistanceThreshold(){
-        distanceThreshold = 3*(plane.getSpeed() * Simulation.knotToMs) * simulation.getElapsedSimulationTime() /(1000);
+        distanceThreshold = 3*(plane.getSpeed() * UnitConversion.knotToMs) * simulation.getElapsedSimulationTime() /(1000);
     }
     
     /**
@@ -293,7 +294,7 @@ public class Pilot extends Thread {
             distanceToTOD = route.getTodPos().getGreatCircleDistance(plane.getPosition());
             distanceToRunwayEnd = route.getDestination().getGreatCircleDistance(plane.getPosition()); 
             //System.out.println("Pilot of: "+plane.getHexCode()+"D to next wp: " + distance + "dThreshold: " + distanceThreshold+ " p alt: "+plane.getPosition().getAltitude());
-            //System.out.println("[PILOT] Phase "+flightPhase); 
+            System.out.println("[PILOT] Phase "+flightPhase); 
             double geometricAltitude = plane.getPosition().getAltitude();
 //            System.out.println("[PILOT] Geometric h (ft): " + geometricAltitude/UnitConversion.ftToMeter +
 //                               " Temperature (K): " + atmosphericModel.calculateTemperature(geometricAltitude) +

@@ -9,11 +9,13 @@ import TFM.utils.Constants;
 import TFM.utils.UnitConversion;
 import TFM.utils.Utils;
 import classes.base.Coordinate;
-import classes.base.Route;
+import TFM.Routes.Route;
 import classes.base.TrafficSimulated;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -25,7 +27,7 @@ public class VerticalProfile {
     private VerticalProfileSolver vps;
     private double simpleAverageClimbRate;
     private double simpleAverageDescentRate;
-    private double cruiseAlt = 30000;
+    private double cruiseAlt; //fts
     
     //Constructor without flightPhases uses the A320 vertical profile as default
     public VerticalProfile(AtmosphericModel atmosphericModel, VerticalProfileSolver vps){
@@ -40,7 +42,12 @@ public class VerticalProfile {
         this.atmosphericModel = atmosphericModel;
         this.flightPhases = new LinkedHashMap<>();
         this.getA320VerticalProfile();
+        //Calculate average climb rates and speed for simple approach to TOC and TOD
         this.calculateAverageClimbAndDescentRates();
+        cruiseAlt = getCruiseAltitude();
+        double cruiseTAS = atmosphericModel.calculateTAS(getFlightPhase("Cruise").getSpeed(), getFlightPhase("Cruise").getSpeedType(), cruiseAlt);
+        route.setCruiseSpeed(cruiseTAS);
+        
         this.vps = new VPSolver(cruiseAlt, simpleAverageClimbRate, simpleAverageDescentRate, route, routeMode, plane);
     }
     
@@ -67,6 +74,22 @@ public class VerticalProfile {
         this.addFlightPhase("Descent (to FL100)", new FlightPhase(FlightPhase.Type.DESCENT,290, "IAS",-3500,FlightPhase.ConditionType.ALTITUDE,10000,Utils.ComparisonOperator.LESS_THAN)); //
         this.addFlightPhase("Approach", new FlightPhase(FlightPhase.Type.DESCENT,250, "IAS",-1500,FlightPhase.ConditionType.ALTITUDE,100,Utils.ComparisonOperator.LESS_THAN)); //
         this.addFlightPhase("Landing", new FlightPhase(FlightPhase.Type.LANDING,137, "IAS",-0,FlightPhase.ConditionType.SPEED,0,Utils.ComparisonOperator.LESS_THAN)); //
+    }
+    
+    /*
+        Get the cruise altitude from the Flightphases dictionary as the higher 
+        condition value of all the FlightPhase.Type.CLIMB
+    */
+    public double getCruiseAltitude() {
+        double maxAltitude = 0;
+        for (FlightPhase phase : flightPhases.values()) {
+            if (phase.getType() == FlightPhase.Type.CLIMB && phase.getConditionType() == FlightPhase.ConditionType.ALTITUDE) {
+                if (phase.getContidionValue() > maxAltitude) {
+                    maxAltitude = phase.getContidionValue();
+                }
+            }
+        }
+        return maxAltitude;
     }
     
     public String checkFlightPhase(String cfp , double planeTAS, double geometricAltitude, double distanceToTOD, double distanceThreshold) {

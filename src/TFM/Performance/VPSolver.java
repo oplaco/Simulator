@@ -5,7 +5,8 @@
 package TFM.Performance;
 
 import TFM.Simulation;
-import classes.base.Route;
+import TFM.utils.UnitConversion;
+import TFM.Routes.Route;
 import classes.base.TrafficSimulated;
 import classes.base.WayPoint;
 
@@ -53,16 +54,16 @@ public class VPSolver implements VerticalProfileSolver{
      * Calculate and update TOCTOD based on vertical profile input
      * Also computes between which wp is located 
      */
-    public void updateTOCTOD(){
+    public void updateTOCTOD(double cruiseSpeed){
         
         //Parametros de calculo de TOC y TOD
-        double V = 400*Simulation.knotToMs; //tbd
-        double vy1=climbRate*Simulation.ftToMeter/60;
-        double vy2=Math.abs(descentRate)*Simulation.ftToMeter/60;
+        double V = cruiseSpeed*UnitConversion.knotToMs; // Assumption that speed during the entire flight is cruise speed
+        double vy1=climbRate*UnitConversion.ftToMeter/60;
+        double vy2=Math.abs(descentRate)*UnitConversion.ftToMeter/60;
         double k1 = vy1/V;
         double k2= vy2/V;
         double D = route.getRouteLength(routeMode);
-        double H = cruiseAlt*Simulation.ftToMeter;
+        double H = cruiseAlt*UnitConversion.ftToMeter;
         
         
         //Se calcula el punto del TOC y TOD como la intersección entre tres rectas
@@ -84,7 +85,7 @@ public class VPSolver implements VerticalProfileSolver{
         {
             this.topOfClimb=x_intersect;
             this.topOfDescent=x_intersect;
-            this.cruiseAlt = h_intersect/Simulation.ftToMeter;
+            this.cruiseAlt = h_intersect/UnitConversion.ftToMeter;
         }
         else
         {
@@ -108,34 +109,36 @@ public class VPSolver implements VerticalProfileSolver{
         
        
         //Set el TOC y TOD de la ruta (3D)
-        route.setTOCTOD(cruiseAlt*Simulation.ftToMeter, tocWP, tocWP+1, distTocToWP, true);
-        route.setTOCTOD(cruiseAlt*Simulation.ftToMeter, todWP, todWP+1, distTodToWP, false);
+        route.setTOCTOD(cruiseAlt*UnitConversion.ftToMeter, tocWP, tocWP+1, distTocToWP, true);
+        route.setTOCTOD(cruiseAlt*UnitConversion.ftToMeter, todWP, todWP+1, distTodToWP, false);
 
         
         
         //Configura la altitud de los waypoints intermedios
-        for(int i = 0;i<route.getWp().length;i++)
-        {
-            WayPoint wp = route.getWp()[i];
-            double distWp = route.getDistanceToWp(i, routeMode);
-            
-            //Si se ha llegado el TOC
-            if(distWp<topOfClimb)
+        if(route.getNumWaypoints()>0){
+            for(int i = 0;i<route.getWp().length;i++)
             {
-                double altitud = k1*distWp;
-                wp.setAltitude(altitud);
+                WayPoint wp = route.getWp()[i];
+                double distWp = route.getDistanceToWp(i, routeMode);
+
+                //Si se ha llegado el TOC
+                if(distWp<topOfClimb)
+                {
+                    double altitud = k1*distWp;
+                    wp.setAltitude(altitud);
+                }
+                //Si se ha llegado al TOD
+                else if(distWp>topOfDescent)
+                {
+                    double altitud = k2*(D-distWp);
+                    wp.setAltitude(altitud);
+                }
+                //Si se esta en crucero
+                else
+                {
+                    wp.setAltitude(cruiseAlt*UnitConversion.ftToMeter);
+                }  
             }
-            //Si se ha llegado al TOD
-            else if(distWp>topOfDescent)
-            {
-                double altitud = k2*(D-distWp);
-                wp.setAltitude(altitud);
-            }
-            //Si se esta en crucero
-            else
-            {
-                wp.setAltitude(cruiseAlt*Simulation.ftToMeter);
-            }  
         }
         
         if(verbose)
@@ -191,7 +194,7 @@ public class VPSolver implements VerticalProfileSolver{
         double dist_to_start = plane.getTraveled();
         
         
-        double descAltError = Math.abs(TrafficSimulated.SAMPLE_TIME*descentRate)*Simulation.ftToMeter;
+        double descAltError = Math.abs(TrafficSimulated.SAMPLE_TIME*descentRate)*UnitConversion.ftToMeter;
         
         //Take Wp into acount and calculates All distances in each iteration
         //Its expensive, and should only update the distance left to next waypoint

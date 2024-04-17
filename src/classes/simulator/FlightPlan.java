@@ -3,7 +3,7 @@ import TFM.Atmosphere.InternationalStandardAtmosphere;
 import TFM.Performance.VerticalProfile;
 import classes.base.TrafficSimulated;
 import classes.base.Pilot;
-import classes.base.Route;
+import TFM.Routes.Route;
 import classes.base.TrafficSimulatedListener;
 import java.io.IOException;
 import java.util.logging.Level;

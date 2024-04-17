@@ -3,9 +3,13 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package classes.base;
+package TFM.Routes;
 
 import TFM.Performance.VerticalProfile;
+import classes.base.Airport;
+import classes.base.Coordinate;
+import classes.base.TrafficSimulated;
+import classes.base.WayPoint;
 import classes.googleearth.GoogleEarth;
 import gov.nasa.worldwind.WorldWind;
 import gov.nasa.worldwind.avlist.AVKey;
@@ -37,7 +41,7 @@ public class Route {
     private Airport destination;
     private int numWaypoints;
     private WayPoint[] wp;
-    private double speed;
+    private double cruiseSpeed;
     
     private Coordinate tocPos;
     private Coordinate todPos;
@@ -62,7 +66,7 @@ public class Route {
         {
             c1=wp[wp1];
         }
-        if(wp2>=wp.length)
+        if(wp2>=numWaypoints)
         {
             c2=destination;
         }
@@ -92,15 +96,15 @@ public class Route {
         this.destination = destination;
         this.numWaypoints = wp.length;
         this.wp = wp;
-        this.speed = 100; // default 100 knots 
+        this.cruiseSpeed = 250; // default 250 knots 
     }
 
-    public Route(Airport departure, Airport destination, WayPoint[] wp, double speed) {
+    public Route(Airport departure, Airport destination, WayPoint[] wp, double cruiseSpeed) {
         this.departure = departure;
         this.destination = destination;
         this.numWaypoints = wp.length;
         this.wp = wp;
-        this.speed = speed;
+        this.cruiseSpeed = cruiseSpeed;
     }
 
     public Route(Airport departure, Airport destination) {
@@ -108,23 +112,23 @@ public class Route {
         this.destination = destination;
         this.numWaypoints = 0;
         this.wp = null;
-        this.speed = 100; // default 100 knots 
+        this.cruiseSpeed = 250; // default 250 knots 
     }
     
     public Route(){
         this.departure = new Airport("Valencia","VLC",39.486998052,-0.475664);
-        this.destination = new Airport("Sao Paulo","SBGR",-23.42583163,-46.46833);;
+        this.destination = new Airport("Sao Paulo","SBGR",-23.42583163,-46.46833);
         this.numWaypoints = 0;
         this.wp = null;
-        this.speed = 100; // default 100 knots 
+        this.cruiseSpeed = 250; // default 250 knots 
     }
 
-    public Route(Airport departure, Airport destination, double speed) {
+    public Route(Airport departure, Airport destination, double cruiseSpeed) {
         this.departure = departure;
         this.destination = destination;
         this.numWaypoints = 0;
         this.wp = null;
-        this.speed = speed;
+        this.cruiseSpeed = cruiseSpeed;
         
     }
 
@@ -152,11 +156,11 @@ public class Route {
 
         cadena = b.readLine(); // aeropuerto destino
         destination = extractAirport(cadena);
-        speed = 100; // 100 knots por defecto
+        cruiseSpeed = 250; // 250 knots por defecto
 
     }
 
-    public Route(String archivo, double speed) throws FileNotFoundException, IOException {
+    public Route(String archivo, double cruiseSpeed) throws FileNotFoundException, IOException {
         String cadena, value[];
         FileReader f = new FileReader(archivo);
         Airport airport;
@@ -180,7 +184,7 @@ public class Route {
 
         cadena = b.readLine(); // aeropuerto destino
         destination = extractAirport(cadena);
-        speed = speed;
+        cruiseSpeed = cruiseSpeed;
 
     }
 
@@ -279,7 +283,7 @@ public class Route {
 
     public double greatCircleTime() { // mins 
 
-        return greatCircleLength() / (speed * 1852 / 3600);
+        return greatCircleLength() / (cruiseSpeed * 1852 / 3600);
 
     }
 
@@ -702,7 +706,7 @@ public class Route {
         return todPos;
     }
     public double rhumbTime() { // seconds
-        return rhumbLength() / (speed * 1852 / 3600);
+        return rhumbLength() / (cruiseSpeed * 1852 / 3600);
     }
 
     public int getNumWaypoints() {
@@ -721,12 +725,12 @@ public class Route {
         return destination;
     }
 
-    public double getSpeed() {
-        return speed;
+    public double getCruiseSpeed() {
+        return cruiseSpeed;
     }
 
-    public void setSpeed(double speed) {
-        speed = speed;
+    public void setCruiseSpeed(double cruiseSpeed) {
+        cruiseSpeed = cruiseSpeed;
     }
 
 }

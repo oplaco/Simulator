@@ -1,11 +1,13 @@
 package TFM;
 
+import TFM.Atmosphere.AtmosphericModel;
+import TFM.Atmosphere.InternationalStandardAtmosphere;
 import TFM.simulationEvents.Command;
 import TFM.simulationEvents.CommandFactory;
 import TFM.simulationEvents.SimulationEvent;
 import classes.base.Coordinate;
 import classes.base.Pilot;
-import classes.base.Route;
+import TFM.Routes.Route;
 import classes.base.TrafficSimulated;
 import gov.nasa.worldwind.View;
 import gov.nasa.worldwind.geom.Angle;
@@ -54,12 +56,9 @@ public class Simulation extends Thread {
     
     //private TrafficMap
     private List<SimulationEvent> events;
-
-    //conversion
-    static public double ftToMeter = 0.3048;
-    static public double knotToMs = 0.514444;
-    static public double meterToNM = 1/1852;
-    static public double ftMinToMs = 1/196.85039370078738;
+    
+    //atmosphere
+    private AtmosphericModel atm; 
     
     public Simulation() {
         this.start();
@@ -68,6 +67,7 @@ public class Simulation extends Thread {
     public Simulation(List<SimulationEvent> events) {
         this.events = events;
         this.pilotMap = new ConcurrentHashMap<String, Pilot>();
+        this.atm = new InternationalStandardAtmosphere();
         this.start();
     }
     
@@ -76,6 +76,7 @@ public class Simulation extends Thread {
         this.trafficSimulationMap = trafficDisplayer.getTrafficSimulationmap();
         this.trafficDisplayer = trafficDisplayer;
         this.pilotMap = new ConcurrentHashMap<String, Pilot>();
+        this.atm = new InternationalStandardAtmosphere();
         this.start();
     }
 
@@ -252,5 +253,8 @@ public class Simulation extends Thread {
     public TrafficDisplayer getTrafficDisplayer() {
         return trafficDisplayer;
     }
-          
+
+    public AtmosphericModel getAtm() {
+        return atm;
+    }   
 }

@@ -10,5 +10,5 @@ package TFM.Performance;
  * This interface is intended to abstract TOC and TOD calculations.
  */
 public interface VerticalProfileSolver {
-    public void updateTOCTOD();
+    public void updateTOCTOD(double cruiseSpeed);
 }

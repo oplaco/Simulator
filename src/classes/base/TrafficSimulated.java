@@ -298,7 +298,7 @@ public class TrafficSimulated extends Thread {
                 course = position.getGreatCircleInitialBearing(target);
             }
             altitude = position.getAltitude() + verticalRate * timeStepDelta  / (1000*60)*UnitConversion.ftToMeter;
-            System.out.println("[PLANE] "+this.getHexCode() + " Altitude (ft): " +altitude/UnitConversion.ftToMeter + " verticalRate" + verticalRate);
+            System.out.println("[PLANE] "+this.getHexCode() + " Altitude (ft): " +altitude/UnitConversion.ftToMeter + " verticalRate (ft/min)" + verticalRate + " speed (kts)"+ speed);
             position.setAltitude(altitude); //in meters
 
             lastSimulationTime = tmpTime;

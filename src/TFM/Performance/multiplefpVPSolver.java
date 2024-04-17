@@ -4,7 +4,7 @@
  */
 package TFM.Performance;
 
-import classes.base.Route;
+import TFM.Routes.Route;
 import java.util.Map;
 
 /**
@@ -17,7 +17,7 @@ public class multiplefpVPSolver implements VerticalProfileSolver{
     Map<String, FlightPhase> flightPhases;
     
     @Override
-    public void updateTOCTOD() {
+    public void updateTOCTOD(double cruiseSpeed) {
         flightPhases = verticalprofile.getFlightPhases();
     }
     

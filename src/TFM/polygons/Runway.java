@@ -139,11 +139,11 @@ public class Runway {
                 String airportCode = tokens[0];
                 String runwayName = tokens[1];
                 // Convert DMS to decimal for the start position
-                double startElevation = Double.parseDouble(tokens[2])*Simulation.ftToMeter;;
+                double startElevation = Double.parseDouble(tokens[2])*UnitConversion.ftToMeter;;
                 double startLat = dmsToDecimal(tokens[3],tokens[4], tokens[5], tokens[6]);
                 double startLon = dmsToDecimal(tokens[7],tokens[8], tokens[9], tokens[10]);
                 // Convert DMS to decimal for the end position
-                double endElevation = Double.parseDouble(tokens[11])*Simulation.ftToMeter;
+                double endElevation = Double.parseDouble(tokens[11])*UnitConversion.ftToMeter;
                 double endLat = dmsToDecimal(tokens[12],tokens[13], tokens[14], tokens[15]);
                 double endLon = dmsToDecimal(tokens[16],tokens[17], tokens[18], tokens[19]);
                 
