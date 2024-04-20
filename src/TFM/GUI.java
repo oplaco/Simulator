@@ -285,7 +285,7 @@ public class GUI {
                 servitudesLayer.addRenderable(takeOffSurface.getPolygon());
             }
             
-            List<Navaid> navaidList = Navaid.createNDBsFromDB("ES");
+            List<Navaid> navaidList = Navaid.getNavAidsFromDB("ES");
             for (Navaid navaid : navaidList) {      
                 navAidLayer.addIcon(navaid);
             }

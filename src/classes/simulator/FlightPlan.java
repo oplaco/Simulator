@@ -1,6 +1,7 @@
 package classes.simulator;
 import TFM.Atmosphere.InternationalStandardAtmosphere;
 import TFM.Performance.VerticalProfile;
+import TFM.Routes.WaypointNavigationRoute;
 import classes.base.TrafficSimulated;
 import classes.base.Pilot;
 import TFM.Routes.Route;
@@ -50,7 +51,7 @@ public class FlightPlan extends Thread {
         this.name = name;
         this.speed = 100; // default
         try {
-            route = new Route(routeFileName, this.speed);
+            route = new WaypointNavigationRoute(routeFileName, this.speed);
         } catch (IOException ex) {
             Logger.getLogger(FlightPlan.class.getName()).log(Level.SEVERE, null, ex);
         }

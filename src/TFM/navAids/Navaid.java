@@ -21,9 +21,8 @@ import java.util.ArrayList;
  * @author Gabriel
  */
 public class Navaid extends UserFacingIcon{
+    private int id;
     private String icon_path;
-    private static String picked_icon_path = "src/images/punto_amarillo.png";
-    private static String other_icon_path = "src/images/punto_rosa.png";
     private Position pos;
     private String type;
     private String identifier;
@@ -44,8 +43,14 @@ public class Navaid extends UserFacingIcon{
         this.magnetic_variation_deg = magnetic_variation_deg;
         this.associated_airport = associated_airport;       
     }
+
+    public Navaid(Position pos, String type, int id) {
+        this.pos = pos;
+        this.type = type;
+        this.id = id;
+    }
     
-    public static List<Navaid> createNDBsFromDB(String isoCountryCode) {
+    public static List<Navaid> getNavAidsFromDB(String isoCountryCode) {
         List<Navaid> navaids = new ArrayList<>();
         String sql = "SELECT * FROM navaids " +
                      "WHERE iso_country = ?";
@@ -137,4 +142,41 @@ public class Navaid extends UserFacingIcon{
 
         return navaids;
     }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getIcon_path() {
+        return icon_path;
+    }
+
+    public Position getPos() {
+        return pos;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getIdentifier() {
+        return identifier;
+    }
+
+    public String getIso_country() {
+        return iso_country;
+    }
+
+    public int getFrecuency_khz() {
+        return frecuency_khz;
+    }
+
+    public double getMagnetic_variation_deg() {
+        return magnetic_variation_deg;
+    }
+
+    public String getAssociated_airport() {
+        return associated_airport;
+    }
+    
 }

@@ -5,6 +5,7 @@
 package TFM.simulationEvents;
 import TFM.Atmosphere.InternationalStandardAtmosphere;
 import TFM.Performance.VerticalProfile;
+import TFM.Routes.WaypointNavigationRoute;
 import TFM.Simulation;
 import classes.base.Coordinate;
 import classes.base.Pilot;
@@ -18,7 +19,7 @@ import java.util.Set;
 
 /**
  *
- * @author Gabriel
+ * @author Gabriel Alfonsín Espín
  */
 public class CreateCommand implements Command {
     @Override
@@ -33,14 +34,14 @@ public class CreateCommand implements Command {
         try {
             String currentDirectory = System.getProperty("user.dir");
             String path = currentDirectory+File.separator+"src"+File.separator+"routes"+File.separator+variables.get("route")+".txt";
-            route = new Route(path);
+            route = new WaypointNavigationRoute(path);
         } catch (IOException ex) {
             System.out.println("Error reading file: " + ex.getMessage());
-            route = new Route();
+            route = new Route() {};
         }
 
         }else{
-            route = new Route();
+            route = new Route() {};
         }
 
         //Create Plane
