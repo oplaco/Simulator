@@ -5,14 +5,40 @@
 package TFM.Routes;
 import classes.base.Coordinate;
 import java.util.*;
-
 /**
+ * Represents an implementation of Dijkstra's algorithm for finding the shortest path in a graph.
+ * <p>
+ * This class implements the {@link PathfindingAlgorithm} interface and provides functionality to find
+ * the shortest path between two coordinates in a graph using Dijkstra's algorithm.
+ * </p>
+ * <p>
+ * Dijkstra's algorithm works by iteratively relaxing the distances of vertices from the source vertex,
+ * updating the shortest path to each vertex until the destination vertex is reached.
+ * </p>
  *
  * @author Gabriel Alfonsín Espín
+ * @see PathfindingAlgorithm
+ * @see Coordinate
+ * @see Graph
  */
-
 public class DijkstraAlgorithm implements PathfindingAlgorithm{
-
+    /**
+     * Finds the shortest path between the departure and destination coordinates in the given graph.
+     * <p>
+     * This method implements Dijkstra's algorithm to find the shortest path between the departure
+     * and destination coordinates in the provided graph.
+     * </p>
+     * <p>
+     * It initializes all vertices with infinite distance from the departure point, except for the departure
+     * point itself, which is initialized with a distance of 0. It then iteratively relaxes the distances
+     * of vertices from the departure point until the destination is reached or all vertices are visited.
+     * </p>
+     *
+     * @param departure   The starting coordinate of the path.
+     * @param destination The destination coordinate of the path.
+     * @param graph       The graph representing the network of vertices and edges.
+     * @return A list of coordinates representing the shortest path from the departure to the destination.
+     */
     @Override
     public List<Coordinate> getShortestPath(Coordinate departure, Coordinate destination, Graph graph) {
         Map<Coordinate, Double> distances = new HashMap<>();
@@ -54,6 +80,17 @@ public class DijkstraAlgorithm implements PathfindingAlgorithm{
         return buildPath(destination, predecessors);
     }
 
+    /**
+     * Builds the shortest path from the destination to the departure coordinate using predecessors map.
+     * <p>
+     * This method constructs the shortest path from the destination to the departure coordinate
+     * using the predecessors map obtained during the execution of Dijkstra's algorithm.
+     * </p>
+     *
+     * @param destination  The destination coordinate of the path.
+     * @param predecessors A map containing the predecessor of each coordinate in the shortest path.
+     * @return A list of coordinates representing the shortest path from the destination to the departure.
+     */
     private List<Coordinate> buildPath(Coordinate destination, Map<Coordinate, Coordinate> predecessors) {
         LinkedList<Coordinate> path = new LinkedList<>();
         for (Coordinate at = destination; at != null; at = predecessors.get(at)) {

@@ -5,13 +5,18 @@
         <group>
             <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/TFM/simulationEvents/CreateCommand.java</file>
             <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/TFM/navAids/Navaid.java</file>
+            <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/classes/base/Coordinate.java</file>
             <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/TFM/Simulation.java</file>
-            <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/TFM/Routes/Route.java</file>
-            <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/TFM/Routes/RouteController.java</file>
             <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/classes/simulator/FlightPlan.java</file>
             <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/TFM/AltitudeScaleListener.java</file>
             <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/TFM/GUI.java</file>
             <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/TFM/Routes/WaypointNavigationRoute.java</file>
+            <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/TFM/utils/Config.java</file>
+            <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/TFM/Routes/Route.java</file>
+            <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/TFM/Routes/RouteController.java</file>
+            <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/classes/base/Airport.java</file>
+            <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/TFM/Routes/Graph.java</file>
+            <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/TFM/Routes/DijkstraAlgorithm.java</file>
             <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/classes/base/WayPoint.java</file>
             <file>file:/C:/Users/Gabriel/Desktop/Master/TFM/World%20Wind/Simulator/src/TFM/Routes/NavAid2NavAidRoute.java</file>
         </group>

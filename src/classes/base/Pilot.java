@@ -295,6 +295,7 @@ public class Pilot extends Thread {
             distanceToRunwayEnd = route.getDestination().getGreatCircleDistance(plane.getPosition()); 
             //System.out.println("Pilot of: "+plane.getHexCode()+"D to next wp: " + distance + "dThreshold: " + distanceThreshold+ " p alt: "+plane.getPosition().getAltitude());
             System.out.println("[PILOT] Phase "+flightPhase); 
+            System.out.println("distanceToTOD (km): "+distanceToTOD/1000);
             double geometricAltitude = plane.getPosition().getAltitude();
 //            System.out.println("[PILOT] Geometric h (ft): " + geometricAltitude/UnitConversion.ftToMeter +
 //                               " Temperature (K): " + atmosphericModel.calculateTemperature(geometricAltitude) +

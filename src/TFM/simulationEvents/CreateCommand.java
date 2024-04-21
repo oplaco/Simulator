@@ -5,7 +5,8 @@
 package TFM.simulationEvents;
 import TFM.Atmosphere.InternationalStandardAtmosphere;
 import TFM.Performance.VerticalProfile;
-import TFM.Routes.WaypointNavigationRoute;
+import TFM.Routes.DatabaseRoute;
+import TFM.Routes.InputTxtRoute;
 import TFM.Simulation;
 import classes.base.Coordinate;
 import classes.base.Pilot;
@@ -30,16 +31,20 @@ public class CreateCommand implements Command {
         //Create Route
         Route route;
         if (variables.containsKey("route")){
-
-        try {
-            String currentDirectory = System.getProperty("user.dir");
-            String path = currentDirectory+File.separator+"src"+File.separator+"routes"+File.separator+variables.get("route")+".txt";
-            route = new WaypointNavigationRoute(path);
-        } catch (IOException ex) {
-            System.out.println("Error reading file: " + ex.getMessage());
-            route = new Route() {};
-        }
-
+            System.out.println("Route variable is: " + variables.get("route"));
+            try {
+                String currentDirectory = System.getProperty("user.dir");
+                String path = currentDirectory+File.separator+"src"+File.separator+"routes"+File.separator+variables.get("route")+".txt";
+                route = new InputTxtRoute(path);
+            } catch (IOException ex) {
+                System.out.println("Could not create InputTxtRoute. " + ex.getMessage());
+                try {
+                    route = new DatabaseRoute(variables.get("route"),200000); 
+                } catch (Exception e) {
+                    System.out.println("Could not create DatabaseRoute. " + e.getMessage());
+                    route = new Route() {};
+                }
+            }
         }else{
             route = new Route() {};
         }
