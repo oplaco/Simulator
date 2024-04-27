@@ -33,7 +33,7 @@ import java.util.ArrayList;
 
 /**
  *
- * @author fms & Alfredo Torres Pons
+ * @author fms 
  */
 public abstract class Route {
 
@@ -86,7 +86,7 @@ public abstract class Route {
         {
             todPos = new Coordinate("TOD", lat, lon, H);
         }
-        
+    
 
     }
     

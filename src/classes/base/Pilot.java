@@ -52,7 +52,6 @@ public class Pilot extends Thread {
     
     // TCAS
     private TCASTransponder myTCASTransponder;
-    private volatile boolean otherTCASSolvingRA;
     
     //Simulation
     private Simulation simulation;
@@ -196,7 +195,16 @@ public class Pilot extends Thread {
         FlightPhase currentFlightPhase = vp.getFlightPhases().get(flightPhase);
         Double climbingRate = currentFlightPhase.getClimbRate();
         //System.out.println("[PILOT] "+plane.getHexCode()+ "Set climbrate "+ climbingRate + " for fligh phase "+flightPhase);
-        plane.setVerticalRate(climbingRate);
+        boolean condition;
+        try {
+            condition = this.myTCASTransponder.isHandlingRA();
+        } catch (NullPointerException e) {
+            condition = false;
+        } 
+
+        if (!condition){
+            plane.setVerticalRate(climbingRate);
+        }
     }
     
      /**
@@ -288,14 +296,15 @@ public class Pilot extends Thread {
             double nextBearing = sbs.calculateBearing(plane.getCourse(), targetBearing, simulationTime-lastSimulationTime);
             plane.setCourse(nextBearing);
             
+            System.out.println("[PILOT] Before iteration");
             myTCASTransponder.iteration();
 
             updateDistanceThreshold();
             distanceToTOD = route.getTodPos().getGreatCircleDistance(plane.getPosition());
             distanceToRunwayEnd = route.getDestination().getGreatCircleDistance(plane.getPosition()); 
             //System.out.println("Pilot of: "+plane.getHexCode()+"D to next wp: " + distance + "dThreshold: " + distanceThreshold+ " p alt: "+plane.getPosition().getAltitude());
-            System.out.println("[PILOT] Phase "+flightPhase); 
-            System.out.println("distanceToTOD (km): "+distanceToTOD/1000);
+            //System.out.println("[PILOT] Phase "+flightPhase); 
+            //System.out.println("distanceToTOD (km): "+distanceToTOD/1000);
             double geometricAltitude = plane.getPosition().getAltitude();
 //            System.out.println("[PILOT] Geometric h (ft): " + geometricAltitude/UnitConversion.ftToMeter +
 //                               " Temperature (K): " + atmosphericModel.calculateTemperature(geometricAltitude) +
@@ -333,8 +342,7 @@ public class Pilot extends Thread {
     @Override
     public void run() {
         int i;
-        myTCASTransponder = new TCASTransponder(plane.getHexCode(),simulation.getTrafficDisplayer().getWwd(),simulation.getPilotMap());
-
+        this.myTCASTransponder = new TCASTransponder(plane.getHexCode(),simulation.getTrafficDisplayer().getWwd(),simulation.getPilotMap());
         if (listener != null) {
             listener.starting(route.getDeparture());
         }
@@ -416,13 +424,5 @@ public class Pilot extends Thread {
     public void verboseOFF() {
         verbose = false;
     }
-
-    public boolean isOtherTCASSolvingRA() {
-        return otherTCASSolvingRA;
-    }
-
-    public void setOtherTCASSolvingRA(boolean otherTCASSolvingRA) {
-        this.otherTCASSolvingRA = otherTCASSolvingRA;
-    }
-   
+  
 }

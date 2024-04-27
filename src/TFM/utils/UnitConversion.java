@@ -11,7 +11,7 @@ package TFM.utils;
 public class UnitConversion {
     static public double ftToMeter = 0.3048;
     static public double knotToMs = 0.514444;
-    static public double meterToNM = 1/1852;
-    static public double ftMinToMs = 1/196.85039370078738;
+    static public double meterToNM = 1.0/1852.0;
+    static public double ftMinToMs = 1.0/196.85039370078738;
     
 }
