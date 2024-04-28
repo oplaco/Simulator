@@ -5,6 +5,12 @@
  */
 package classes.base;
 
+import TFM.AircraftControl.AircraftControlCommand;
+import static TFM.AircraftControl.AircraftControlCommand.CommandType.ALTITUDE;
+import static TFM.AircraftControl.AircraftControlCommand.CommandType.COURSE;
+import static TFM.AircraftControl.AircraftControlCommand.CommandType.SPEED;
+import static TFM.AircraftControl.AircraftControlCommand.CommandType.VERTICAL_RATE;
+import TFM.AircraftControl.ControllableAircraft;
 import TFM.Simulation;
 import TFM.TrafficIcon;
 import TFM.utils.UnitConversion;
@@ -12,6 +18,8 @@ import classes.googleearth.GoogleEarthTraffic;
 import gov.nasa.worldwind.geom.Vec4;
 import gov.nasa.worldwind.render.UserFacingIcon;
 import java.awt.Dimension;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,7 +27,7 @@ import java.util.logging.Logger;
  *
  * @author fms
  */
-public class TrafficSimulated extends Thread {
+public class TrafficSimulated extends Thread  implements ControllableAircraft{
     
     
     private Simulation simulation;
@@ -56,7 +64,8 @@ public class TrafficSimulated extends Thread {
     private boolean paintInGoogleEarth;
     private GoogleEarthTraffic ge;
     
- 
+    //Aircraft Control
+    private int currentCommandPriority = Integer.MAX_VALUE;
     
     //Conversion units
     static private double ftToMeter = 0.3048;
@@ -356,6 +365,89 @@ public class TrafficSimulated extends Thread {
     public String toString() {
         return hexCode;
     }
+
+ 
+    @Override
+    public <T> void processCommand(AircraftControlCommand<T> command) {
+        switch (command.getType()) {
+            case ALTITUDE:
+                if (command.getValue() instanceof Double) {
+                    setAltitude((Double) command.getValue(), command.getPriority());
+                }
+                break;
+            case COURSE:
+                if (command.getValue() instanceof Double) {
+                    setCourse((Double) command.getValue(), command.getPriority());
+                }
+                break;
+            case SPEED:
+                if (command.getValue() instanceof Double) {
+                    setSpeed((Double) command.getValue(), command.getPriority());
+                }
+                break;
+            case VERTICAL_RATE:
+                if (command.getValue() instanceof Double) {
+                    setVerticalRate((Double) command.getValue(), command.getPriority());
+                }
+                break;
+            case ROUTE_MODE:
+                if (command.getValue() instanceof Integer) {
+                    setRouteMode((Integer) command.getValue(), command.getPriority());
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported command type: " + command.getType());
+        }
+    }
+    public synchronized void setCourse(double bearing, int priority) {
+        if (priority <= currentCommandPriority) {
+            this.course = bearing;
+            currentCommandPriority = priority;
+            System.out.println("Course updated to " + bearing + " with priority " + priority);
+        }
+    }
+
+
+    public synchronized void setAltitude(double altitude, int priority) {
+        if (priority <= currentCommandPriority) {
+            this.getPosition().setAltitude(altitude);
+            currentCommandPriority = priority;
+            System.out.println("Altitude updated to " + altitude + " with priority " + priority);
+        }
+    }
+
+  
+    public synchronized void setSpeed(double speed, int priority) {
+        if (priority <= currentCommandPriority) {
+            this.speed = speed;
+            currentCommandPriority = priority;
+            System.out.println("Speed updated to " + speed + " with priority " + priority);
+        }
+    }
+    
+  
+    public synchronized void setVerticalRate(double rate, int priority) {
+        if (priority <= currentCommandPriority) {
+            this.verticalRate = rate;
+            currentCommandPriority = priority;
+            System.out.println("Vertical rate updated to " + rate + " with priority " + priority);
+        }
+    }
+    
+
+    public void setRouteMode(int routeMode, int priority) {
+        if (priority <= currentCommandPriority) {
+            this.routeMode = routeMode;
+            currentCommandPriority = priority;
+            System.out.println("Route mode updated to " + routeMode + " with priority " + priority);
+        }
+    }
+    
+    @Override
+    public void resetPriority() {
+        currentCommandPriority = Integer.MAX_VALUE;
+        System.out.println("[PLANE] "+hexCode+" Command priority reset to normal");
+    }
     
     //GETTERS & SETTERS
     public boolean isMoving() {
@@ -430,10 +522,6 @@ public class TrafficSimulated extends Thread {
 
     public void setFollowed(boolean followed) {
         this.followed = followed;
-    }
-
-    public void setCourse(double course) {
-        this.course = course;
     }
 
 }

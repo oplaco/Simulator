@@ -4,31 +4,24 @@
  */
 package TCAS;
 
-import TFM.Simulation;
-import TFM.TrafficSimulationMap;
+import TFM.AircraftControl.AircraftControlCommand;
+import TFM.AircraftControl.ControllableAircraft;
+import TFM.AircraftControl.ICommandSource;
 import TFM.utils.UnitConversion;
-import TFM.utils.Utils;
 import TFM.utils.Vector2D;
 import classes.base.Coordinate;
 import classes.base.Pilot;
 import classes.base.TrafficSimulated;
 import gov.nasa.worldwind.WorldWindow;
-import gov.nasa.worldwind.geom.LatLon;
-import gov.nasa.worldwind.geom.Position;
 import gov.nasa.worldwind.geom.Vec4;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
  * @author Gabriel
  */
-public class TCASTransponder{
+public class TCASTransponder implements ICommandSource {
     
     public static int otherTraffic = 0;
     public static int proximateTraffic = 1;
@@ -52,7 +45,9 @@ public class TCASTransponder{
     private WorldWindow wwd;
     private String ownHexCode;
     private TrafficSimulated ownTraffic;
+    
     private boolean handlingRA = false;
+    private boolean currentHandlingRA = false;
 
     
     public TCASTransponder(String hexCode,WorldWindow wwd,ConcurrentHashMap pilotMap){
@@ -66,7 +61,6 @@ public class TCASTransponder{
     
  
     public void iteration(){
-        System.out.println("TCAS iteration");
         for (Map.Entry<String, Pilot> entry : pilotMap.entrySet()) {
             String hexCode = entry.getKey();
             Pilot otherPilot = entry.getValue();
@@ -91,14 +85,21 @@ public class TCASTransponder{
         handlingRA = false;
         if(distanceToTraffic<6000/UnitConversion.meterToNM){
             if(TCPA<25 && TCPA>0){
-                handlingRA = true;
                 trafficType = resolutionAdvisory;
+                handlingRA = true;
             }else if(TCPA<40 && TCPA>=25){
                 trafficType = trafficAdvisory;              
             }else if(TCPA>=40){
                 trafficType = proximateTraffic;
             }
         }
+        
+        // If the traffic situation has improved, reset the priority
+        if (!handlingRA && currentHandlingRA) {
+            ownTraffic.resetPriority();
+        }
+
+        currentHandlingRA = handlingRA; // Store the current handling state for comparison in the next iteration
     }
   
     private void computeTCASInterrogation(TrafficSimulated traffic_i){
@@ -141,12 +142,16 @@ public class TCASTransponder{
         double v_iz = traffic_i_NEDspeed[2];
         double v = RAverticalSpeed;
         double a = Double.POSITIVE_INFINITY;
+        
+        //System.out.println("[TCAS] "+traffic_o.getHexCode()+ " TCPA "+TCPA+" CPA "+CPA);
                        
         if (trafficType==resolutionAdvisory){
             int solution = RASolver.solve(S_o, s_oz, V_o, v_oz, S_i, s_iz, V_i, v_iz, v, a);
             if (solution == 1){
+                sendCommand(ownTraffic, new AircraftControlCommand(AircraftControlCommand.CommandType.VERTICAL_RATE, 1000, 1));
                 System.out.println("[TCAS] "+traffic_o.getHexCode()+ " ordered to ASCEND");
             }else{
+                sendCommand(ownTraffic, new AircraftControlCommand(AircraftControlCommand.CommandType.VERTICAL_RATE, -1000, 1));
                 System.out.println("[TCAS] "+traffic_o.getHexCode()+ " ordered to DESCEND"); 
             }
             
@@ -239,6 +244,11 @@ public class TCASTransponder{
         return nasa_pos;
     }
 
+    // Generic method to send any type of command
+    @Override
+    public void sendCommand(ControllableAircraft controllableAircraft, AircraftControlCommand command) {
+       controllableAircraft.processCommand(command);
+    }
     
     public int getTrafficType() {
         return trafficType;

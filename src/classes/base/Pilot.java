@@ -7,23 +7,22 @@ package classes.base;
 
 import TFM.Routes.Route;
 import TCAS.TCASTransponder;
-import static TCAS.TCASTransponder.resolutionAdvisory;
+import TFM.AircraftControl.AircraftControlCommand;
+import TFM.AircraftControl.ControllableAircraft;
+import TFM.AircraftControl.ICommandSource;
 import TFM.Atmosphere.AtmosphericModel;
 import TFM.Atmosphere.InternationalStandardAtmosphere;
 import TFM.Models.BearingStrategy;
 import TFM.Models.SimpleBearingStrategy;
 import TFM.Performance.AircraftSpecifications;
 import TFM.Performance.FlightPhase;
-import TFM.Performance.VPSolver;
 import TFM.Performance.VerticalProfile;
 import TFM.Simulation;
-import TFM.utils.Constants;
 import TFM.utils.UnitConversion;
 import static classes.base.TrafficSimulated.FLY_LOXODROMIC;
 import classes.googleearth.GoogleEarthTraffic;
 import java.awt.Color;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,7 +30,7 @@ import java.util.logging.Logger;
  *
  * @author fms & Gabriel Alfonsín Espín
  */
-public class Pilot extends Thread {
+public class Pilot extends Thread implements ICommandSource {
      
     private Route route;
     private TrafficSimulated plane;
@@ -44,11 +43,14 @@ public class Pilot extends Thread {
     private GoogleEarthTraffic ge;
     private boolean PaintInGoogleEarth;
     private PilotListener listener = null;
-    private Coordinate to; // Current plane destination.
     
     //Bearing/Course
     private BearingStrategy sbs;
     private double targetBearing;
+    
+    //Aircraft Control
+    private static final int PILOT_PRIORITY = 3;
+    private Coordinate to; // Current plane destination.
     
     // TCAS
     private TCASTransponder myTCASTransponder;
@@ -167,44 +169,29 @@ public class Pilot extends Thread {
     /**
      * Update the speed acording to the FlighPhase and transform it to TAS (True Air Speed).
      */
-    private void updateSpeed(){
+    private void updateSpeed() {
         FlightPhase currentFlightPhase = vp.getFlightPhases().get(flightPhase);
-        Double fligthPhaseSpeed = currentFlightPhase.getSpeed();
+        Double flightPhaseSpeed = currentFlightPhase.getSpeed();
         String speedType = currentFlightPhase.getSpeedType();
         Double geometricAltitude = plane.getPosition().getAltitude();
-  
-        Double fligthPhaseTAS, planeTAS, TAS;
-        fligthPhaseTAS = atmosphericModel.calculateTAS(fligthPhaseSpeed, speedType, geometricAltitude);
-        planeTAS = plane.getSpeed();
-        
-        if(currentFlightPhase.getType() == FlightPhase.Type.TAKEOFF){
-            double newTAS = planeTAS + aircraftSpecifications.getTakeoffAcc()*(simulationTime-lastSimulationTime)/1000;
-            TAS = newTAS;
-        }else if(currentFlightPhase.getType() == FlightPhase.Type.LANDING){
-            double newTAS = planeTAS + aircraftSpecifications.getTakeoffAcc()*(simulationTime-lastSimulationTime)/1000;
-            TAS = newTAS;
+
+        Double flightPhaseTAS = atmosphericModel.calculateTAS(flightPhaseSpeed, speedType, geometricAltitude);
+        Double planeTAS = plane.getSpeed();
+        Double TAS;
+
+        if (currentFlightPhase.getType() == FlightPhase.Type.TAKEOFF || currentFlightPhase.getType() == FlightPhase.Type.LANDING) {
+            double acceleration = (currentFlightPhase.getType() == FlightPhase.Type.TAKEOFF) ? aircraftSpecifications.getTakeoffAcc() : aircraftSpecifications.getLandingAcc();
+            TAS = planeTAS + acceleration * (simulationTime - lastSimulationTime) / 1000;
         } else {
-            TAS = fligthPhaseTAS;
+            TAS = flightPhaseTAS;
         }
-        //System.out.println("[PILOT] "+plane.getHexCode()+ " Set speed (TAS) "+ TAS + " for fligh phase "+flightPhase);
-        plane.setSpeed(TAS);
-        
+        sendCommand(plane, new AircraftControlCommand(AircraftControlCommand.CommandType.SPEED, TAS, PILOT_PRIORITY));
     }
     
-    private void updateVerticalRate(){
+    private void updateVerticalRate() {
         FlightPhase currentFlightPhase = vp.getFlightPhases().get(flightPhase);
         Double climbingRate = currentFlightPhase.getClimbRate();
-        //System.out.println("[PILOT] "+plane.getHexCode()+ "Set climbrate "+ climbingRate + " for fligh phase "+flightPhase);
-        boolean condition;
-        try {
-            condition = this.myTCASTransponder.isHandlingRA();
-        } catch (NullPointerException e) {
-            condition = false;
-        } 
-
-        if (!condition){
-            plane.setVerticalRate(climbingRate);
-        }
+        sendCommand(plane, new AircraftControlCommand(AircraftControlCommand.CommandType.VERTICAL_RATE, climbingRate, PILOT_PRIORITY));
     }
     
      /**
@@ -287,18 +274,10 @@ public class Pilot extends Thread {
             // Code inside the loop
             simulationTime = this.simulation.getSimulationTime(); //First line
    
-            
-            if (routeMode == FLY_LOXODROMIC) {
-                targetBearing = plane.getPosition().getRhumbLineBearing(to);
-            } else {
-                targetBearing = plane.getPosition().getGreatCircleInitialBearing(to);
-            }
-            double nextBearing = sbs.calculateBearing(plane.getCourse(), targetBearing, simulationTime-lastSimulationTime);
-            plane.setCourse(nextBearing);
-            
-            System.out.println("[PILOT] Before iteration");
-            myTCASTransponder.iteration();
+            adjustBearingTo(to);
 
+            myTCASTransponder.iteration();
+                    
             updateDistanceThreshold();
             distanceToTOD = route.getTodPos().getGreatCircleDistance(plane.getPosition());
             distanceToRunwayEnd = route.getDestination().getGreatCircleDistance(plane.getPosition()); 
@@ -338,7 +317,20 @@ public class Pilot extends Thread {
         }
         plane.getPosition().setLocationName(to.getLocationName()); // update position name in plane
     }
+    
+    private void adjustBearingTo(Coordinate to) {
+        if (routeMode == FLY_LOXODROMIC) {
+            targetBearing = plane.getPosition().getRhumbLineBearing(to);
+        } else {
+            targetBearing = plane.getPosition().getGreatCircleInitialBearing(to);
+        }
+        double currentBearing = plane.getCourse();
+        double nextBearing = sbs.calculateBearing(currentBearing, targetBearing, simulationTime - lastSimulationTime);
 
+        // Sending command through the ICommandSource interface
+        sendCommand(plane, new AircraftControlCommand(AircraftControlCommand.CommandType.COURSE, nextBearing, PILOT_PRIORITY));
+    }
+    
     @Override
     public void run() {
         int i;
@@ -386,6 +378,21 @@ public class Pilot extends Thread {
             System.out.println("[PILOT OF " + plane + "]: End");
         }
 
+    }
+    
+    // Generic method to send any type of command
+    @Override
+    public void sendCommand(ControllableAircraft controllableAircraft, AircraftControlCommand command) {
+       controllableAircraft.processCommand(command);
+    }
+    
+    // Method to continue route following
+    public void continueRoute() {
+        if (nextWp < route.getWp().length) {
+            Coordinate nextWaypoint = route.getWp()[nextWp];
+            plane.flyit(to, routeMode);
+            System.out.println("[PILOT]: Continuing route to " + nextWaypoint.getLocationName());
+        }
     }
        
     public void paint(String fileName, String altMode, Color col, int tick) {
