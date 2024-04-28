@@ -386,7 +386,7 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
                 }
                 break;
             case VERTICAL_RATE:
-                if (command.getValue() instanceof Double) {
+                if (command.getValue() instanceof Double ) {
                     setVerticalRate((Double) command.getValue(), command.getPriority());
                 }
                 break;

@@ -11,33 +11,17 @@ package TFM.polygons;
  * Class to build a Nasa WorldWind Polygon to represent a traffic.
  */
 
+import static TFM.utils.Constants.EARTH_RADIUS;
 import classes.base.TrafficSimulated;
-import gov.nasa.worldwind.avlist.AVKey;
-import gov.nasa.worldwind.geom.Angle;
-import gov.nasa.worldwind.geom.LatLon;
 //Different class Position from wwd and adsb.
 import gov.nasa.worldwind.geom.Position;
-import gov.nasa.worldwind.globes.Globe;
-import gov.nasa.worldwind.render.BasicShapeAttributes;
-import gov.nasa.worldwind.render.Material;
-import gov.nasa.worldwind.render.Path;
 import java.util.ArrayList;
 import gov.nasa.worldwind.render.Polygon;
-import gov.nasa.worldwind.render.ShapeAttributes;
-import gov.nasa.worldwind.render.SurfaceImage;
-import gov.nasa.worldwind.render.SurfaceSquare;
-import java.awt.Color;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 
 public class TrafficPolygon{
     
     private String icaoCode;
     private Polygon polygon;
-    // Constants for Earth
-    final double EARTH_RADIUS = 6378137; // Radius in meters
     
     public TrafficPolygon(TrafficSimulated ts, Position pos,double distanceEyeToViewCenter){
             // Create a polygon, set some of its properties and set its attributes.
@@ -84,8 +68,7 @@ public class TrafficPolygon{
     }
     
     public static Position calculatePosition(Position start, double bearing, double distance) {
-        double radiusEarth = 6371000.0; // Earth's radius in meters
-        double distRatio = distance / radiusEarth;
+        double distRatio = distance / EARTH_RADIUS;
         double bearingRad = Math.toRadians(bearing);
 
         double startLatRad = start.getLatitude().radians;
@@ -113,6 +96,4 @@ public class TrafficPolygon{
     public Polygon getPolygon() {
         return polygon;
     }
-
-
 }

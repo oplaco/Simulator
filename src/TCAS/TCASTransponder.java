@@ -83,7 +83,7 @@ public class TCASTransponder implements ICommandSource {
         TCPA = Math.abs(TCPA);
         //Only enforce TA and RA if targets are within 6NM. It should be 6NM horizontally and within 1200ft.
         handlingRA = false;
-        if(distanceToTraffic<6000/UnitConversion.meterToNM){
+        if(Math.abs(distanceToTraffic)<6000/UnitConversion.meterToNM){
             if(TCPA<25 && TCPA>0){
                 trafficType = resolutionAdvisory;
                 handlingRA = true;
@@ -148,11 +148,12 @@ public class TCASTransponder implements ICommandSource {
         if (trafficType==resolutionAdvisory){
             int solution = RASolver.solve(S_o, s_oz, V_o, v_oz, S_i, s_iz, V_i, v_iz, v, a);
             if (solution == 1){
-                sendCommand(ownTraffic, new AircraftControlCommand(AircraftControlCommand.CommandType.VERTICAL_RATE, 1000, 1));
+                System.out.println("[TCAS] "+traffic_o.getHexCode()+ " ordered to ASCEND");
+                sendCommand(ownTraffic, new AircraftControlCommand(AircraftControlCommand.CommandType.VERTICAL_RATE, 1000.0, 1));
                 System.out.println("[TCAS] "+traffic_o.getHexCode()+ " ordered to ASCEND");
             }else{
-                sendCommand(ownTraffic, new AircraftControlCommand(AircraftControlCommand.CommandType.VERTICAL_RATE, -1000, 1));
                 System.out.println("[TCAS] "+traffic_o.getHexCode()+ " ordered to DESCEND"); 
+                sendCommand(ownTraffic, new AircraftControlCommand(AircraftControlCommand.CommandType.VERTICAL_RATE, -1000.0, 1)); 
             }
             
         }
