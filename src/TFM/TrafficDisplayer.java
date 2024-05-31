@@ -46,7 +46,8 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     
     //Picked Traffic
     TrafficPickedListener trafficPickedListener;
-    Object  pickedObject;
+    TrafficPolygon  pickedPolygon;
+    TrafficSimulated pickedTraffic;
     
     TrafficIcon lastOver; //Ultimo icono por el que se pasó por encima
     TrafficIcon pickedIcon; //Icono seleccionado
@@ -201,28 +202,38 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     
     @Override
     public void planeUpdated(TrafficSimulated trfc) {
-        //System.out.println("InitialAltitude en m: "+this.wwd.getView().propertyChange(evt));
         // Check if there is an existing polygon and remove it
         if (trafficPolygonMap.containsKey(trfc.getHexCode())) {
             TrafficPolygon existingPolygon = trafficPolygonMap.get(trfc.getHexCode());
             trafficPolygonLayer.removeRenderable(existingPolygon.getPolygon());
         }
-        
-        if(trfc.isFollowed()){
-            System.out.println("Altitude: "+trfc.getPosition().getAltitude());
-            view.setEyePosition(new gov.nasa.worldwind.geom.Position(Angle.fromDegrees(trfc.getPosition().getLatitude()), Angle.fromDegrees(trfc.getPosition().getLongitude()), trfc.getPosition().getAltitude()*2));
+
+        if (trfc.isFollowed()) {
+            System.out.println("Altitude: " + trfc.getPosition().getAltitude());
+            view.setEyePosition(new gov.nasa.worldwind.geom.Position(
+                Angle.fromDegrees(trfc.getPosition().getLatitude()),
+                Angle.fromDegrees(trfc.getPosition().getLongitude()),
+                trfc.getPosition().getAltitude() * 2
+            ));
             view.setPitch(Angle.fromDegrees(60));
             view.setHeading(Angle.fromDegrees(trfc.getCourse()));
         }
-    
+
         // Create a new updated polygon
         TrafficPolygon trafficPolygon = new TrafficPolygon(trfc, getNasaPos(trfc), distanceEyePositionToViewCenter);
 
         // Update the map and layer with the new polygon
         trafficPolygonMap.put(trfc.getHexCode(), trafficPolygon);
         trafficPolygonLayer.addRenderable(trafficPolygon.getPolygon());
-        this.wwd.redraw();      
+
+        // Check if the updated traffic is the currently picked traffic
+        if (pickedTraffic != null && pickedTraffic.getHexCode().equals(trfc.getHexCode())) {
+            trafficPickedListener.showDetails(trfc); // Update detail view
+        }
+
+        this.wwd.redraw();
     }
+
     
     public void viewUpdated(double altitude){
         //System.out.println("From Traffic Displayer the altitude is: "+ altitude);
@@ -304,44 +315,43 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
             this.lastOver.setHighlighted(true);
         }
     }
-    
-    /**
-     * 
-     * @param o 
-     */
-//    private void pick(Object o) {
-//        if (o instanceof Polygon) {
-//            Polygon selectedPolygon = (Polygon) o;
-//            TrafficPolygon trafficPolygon = findTrafficPolygonByPolygon(selectedPolygon);
-//
-//            if (trafficPolygon != null) {
-//                // Output details to the console or handle them as needed
-//                System.out.println("Picked Traffic Polygon:");
-//                System.out.println("ICAO Code: " + trafficPolygon.getIcaoCode());
-//                System.out.println("Polygon Details: " + selectedPolygon.toString());
-//            } else {
-//                System.out.println("No TrafficPolygon associated with the selected polygon.");
-//            }
-//        }
-//    }
-        
+          
     public void pick(Object o) {
         if (o instanceof Polygon) {
             Polygon selectedPolygon = (Polygon) o;
             TrafficPolygon trafficPolygon = findTrafficPolygonByPolygon(selectedPolygon);
-            System.out.println("CLICKADOOOOOOOOOOOOOOOOOOOOOOOOOO21387D9HDHDASKD AHSKD19 HD9198 ASD");
-            if (trafficPolygon != null) {
-                if (trafficPolygon.equals(pickedObject)) {
-                    trafficPickedListener.hideDetails();
-                } else {
-                    trafficPickedListener.showDetails(trafficPolygon.getIcaoCode(), trafficPolygon.toString());
-                }
-                pickedObject = trafficPolygon;
-            } else {
+
+            if (trafficPolygon == null) {
                 System.out.println("No TrafficPolygon associated with the selected polygon.");
+                return;
             }
+
+            TrafficSimulated pickedTrafficTemp = trafficSimulationMap.get(trafficPolygon.getIcaoCode());
+
+            // If the same polygon (by ICAO code) is clicked again, toggle the detail view
+            if (pickedTraffic != null && pickedTraffic.getHexCode().equals(trafficPolygon.getIcaoCode())) {
+                // Toggle visibility of details
+                if (pickedTraffic == null) {
+                    // Show details if currently hidden
+                    trafficPickedListener.showDetails(pickedTrafficTemp);
+                    pickedTraffic = pickedTrafficTemp;
+                } else {
+                    // Hide details if currently shown
+                    trafficPickedListener.hideDetails();
+                    pickedTraffic = null;
+                }
+            } else {
+                // If a different polygon is clicked, show its details and update pickedPolygon and pickedTraffic
+                trafficPickedListener.showDetails(pickedTrafficTemp);
+                pickedPolygon = trafficPolygon;
+                pickedTraffic = pickedTrafficTemp;
+            }
+        } else {
+            System.out.println("Selected object is not a Polygon.");
         }
     }
+
+
     
     private TrafficPolygon findTrafficPolygonByPolygon(Polygon polygon) {
         for (TrafficPolygon tp : trafficPolygonMap.values()) {

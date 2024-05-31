@@ -4,11 +4,13 @@
  */
 package TFM.GUI;
 
+import classes.base.TrafficSimulated;
+
 /**
  *
  * @author Gabriel Alfonsín Espín
  */
 public interface TrafficPickedListener {
-    void showDetails(String icaoCode, String polygonDetails);
+    void showDetails(TrafficSimulated traffic);
     void hideDetails();
 }

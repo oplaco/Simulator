@@ -13,12 +13,18 @@ import static TFM.AircraftControl.AircraftControlCommand.CommandType.VERTICAL_RA
 import TFM.AircraftControl.ControllableAircraft;
 import TFM.Simulation;
 import TFM.TrafficIcon;
+import TFM.utils.LogEntry;
 import TFM.utils.UnitConversion;
 import classes.googleearth.GoogleEarthTraffic;
 import gov.nasa.worldwind.geom.Vec4;
 import gov.nasa.worldwind.render.UserFacingIcon;
 import java.awt.Dimension;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -66,10 +72,9 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
     
     //Aircraft Control
     private int currentCommandPriority = Integer.MAX_VALUE;
-    
-    //Conversion units
-    static private double ftToMeter = 0.3048;
-    static private double knotToMs = 0.514444;
+
+    //Logging
+    private List<LogEntry> logEntries;
 
     public TrafficSimulated(String hexCode, Coordinate position, double speed, double course) {
         this.hexCode = hexCode;
@@ -101,6 +106,7 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
         this.sampleTime = 0;
         this.paintInGoogleEarth = false;
         this.verticalRate=0;
+        this.logEntries = new ArrayList<>();
         
         //Carga la imagen del avión y configura el tamaño
         this.icon = new TrafficIcon(this.hexCode,position.toPosition(1));
@@ -120,7 +126,8 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
         this.paintInGoogleEarth = false;
         this.listener = listener;
         this.verticalRate=0;
-        
+        this.logEntries = new ArrayList<>();
+
         //Carga la imagen del avión y configura el tamaño
         this.icon = new TrafficIcon(this.hexCode,position.toPosition(1));
         icon.setSize(new Dimension(30, 30));
@@ -142,6 +149,8 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
         this.sampleTime = builder.sampleTime;
         this.routeMode = builder.routeMode;
         this.waitTime = THREAD_TIME;
+        // Initialize logEntries
+        this.logEntries = new ArrayList<>();
     }
     // Static inner Builder class for the CREATE command
     public static class TrafficSimulatedBuilder  {
@@ -309,8 +318,11 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
             altitude = position.getAltitude() + verticalRate * timeStepDelta  / (1000*60)*UnitConversion.ftToMeter;
             System.out.println("[PLANE] "+this.getHexCode() + " Altitude (ft): " +altitude/UnitConversion.ftToMeter + " verticalRate (ft/min)" + verticalRate + " speed (kts)"+ speed);
             position.setAltitude(altitude); //in meters
-
+            System.out.println("Logging data");
             lastSimulationTime = tmpTime;
+            //Loggin
+            
+            logData();
             try {
                 Thread.sleep(waitTime);
             } catch (InterruptedException ex) {
@@ -366,7 +378,30 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
         return hexCode;
     }
 
- 
+    
+    private synchronized void logData() {
+        LogEntry entry = new LogEntry(simulation.getSimulationTime());
+        entry.setAttribute("Latitude", position.getLatitude());
+        entry.setAttribute("Longitude", position.getLongitude());
+        entry.setAttribute("Altitude", position.getAltitude());
+        entry.setAttribute("Speed", speed);
+        entry.setAttribute("Bearing", course);
+        logEntries.add(entry);
+    }
+    
+    public void saveLogsToCsv(String filePath) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            writer.write(LogEntry.getCsvHeader(logEntries));
+            writer.newLine();
+            for (LogEntry entry : logEntries) {
+                writer.write(entry.toCsv());
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
     @Override
     public <T> void processCommand(AircraftControlCommand<T> command) {
         switch (command.getType()) {
@@ -399,6 +434,7 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
                 throw new IllegalArgumentException("Unsupported command type: " + command.getType());
         }
     }
+    
     public synchronized void setCourse(double bearing, int priority) {
         if (priority <= currentCommandPriority) {
             this.course = bearing;
@@ -406,7 +442,6 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
             //System.out.println("Course updated to " + bearing + " with priority " + priority);
         }
     }
-
 
     public synchronized void setAltitude(double altitude, int priority) {
         if (priority <= currentCommandPriority) {
@@ -416,15 +451,13 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
         }
     }
 
-  
     public synchronized void setSpeed(double speed, int priority) {
         if (priority <= currentCommandPriority) {
             this.speed = speed;
             currentCommandPriority = priority;
             //System.out.println("Speed updated to " + speed + " with priority " + priority);
         }
-    }
-    
+    }  
   
     public synchronized void setVerticalRate(double rate, int priority) {
         if (priority <= currentCommandPriority) {
@@ -432,8 +465,7 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
             currentCommandPriority = priority;
             //System.out.println("Vertical rate updated to " + rate + " with priority " + priority);
         }
-    }
-    
+    }  
 
     public void setRouteMode(int routeMode, int priority) {
         if (priority <= currentCommandPriority) {
@@ -450,6 +482,11 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
     }
     
     //GETTERS & SETTERS
+    
+    public synchronized List<LogEntry> getLogEntries() {
+        return new ArrayList<>(logEntries); // Return a copy to avoid concurrent modification issues
+    }
+        
     public boolean isMoving() {
         return moving;
     }
@@ -505,8 +542,6 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
     public void setClimbAcceleration(double climbAcceleration) {
         this.climbAcceleration = climbAcceleration;
     }
-
-    
 
     public long getLastSimulationTime() {
         return lastSimulationTime;
