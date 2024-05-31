@@ -403,7 +403,7 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
         if (priority <= currentCommandPriority) {
             this.course = bearing;
             currentCommandPriority = priority;
-            System.out.println("Course updated to " + bearing + " with priority " + priority);
+            //System.out.println("Course updated to " + bearing + " with priority " + priority);
         }
     }
 
@@ -412,7 +412,7 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
         if (priority <= currentCommandPriority) {
             this.getPosition().setAltitude(altitude);
             currentCommandPriority = priority;
-            System.out.println("Altitude updated to " + altitude + " with priority " + priority);
+            //System.out.println("Altitude updated to " + altitude + " with priority " + priority);
         }
     }
 
@@ -421,7 +421,7 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
         if (priority <= currentCommandPriority) {
             this.speed = speed;
             currentCommandPriority = priority;
-            System.out.println("Speed updated to " + speed + " with priority " + priority);
+            //System.out.println("Speed updated to " + speed + " with priority " + priority);
         }
     }
     
@@ -430,7 +430,7 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
         if (priority <= currentCommandPriority) {
             this.verticalRate = rate;
             currentCommandPriority = priority;
-            System.out.println("Vertical rate updated to " + rate + " with priority " + priority);
+            //System.out.println("Vertical rate updated to " + rate + " with priority " + priority);
         }
     }
     

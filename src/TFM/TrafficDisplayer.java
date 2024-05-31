@@ -4,6 +4,7 @@
  */
 package TFM;
 
+import TFM.GUI.TrafficPickedListener;
 import TFM.polygons.TrafficPolygon;
 import classes.base.Coordinate;
 import classes.base.TrafficSimulated;
@@ -13,28 +14,21 @@ import gov.nasa.worldwind.WorldWindow;
 import gov.nasa.worldwind.event.SelectEvent;
 import gov.nasa.worldwind.event.SelectListener;
 import gov.nasa.worldwind.geom.Angle;
-import gov.nasa.worldwind.geom.LatLon;
 import gov.nasa.worldwind.geom.Vec4;
 import gov.nasa.worldwind.globes.Globe;
 import gov.nasa.worldwind.layers.AnnotationLayer;
 import gov.nasa.worldwind.layers.IconLayer;
 import gov.nasa.worldwind.layers.RenderableLayer;
 import gov.nasa.worldwind.render.GlobeAnnotation;
+import gov.nasa.worldwind.render.Polygon;
 import gov.nasa.worldwindx.examples.util.SlideShowAnnotation;
 import java.awt.Dimension;
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.opensky.libadsb.Position;
-
-import traffic.Traffic;
-import traffic.TrafficListener;
-import traffic.TrafficMap;
-
 
 /**
  *
@@ -50,6 +44,10 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     private WorldWindow wwd; //Referencia al core de wwd
     private View view;
     
+    //Picked Traffic
+    TrafficPickedListener trafficPickedListener;
+    Object  pickedObject;
+    
     TrafficIcon lastOver; //Ultimo icono por el que se pasó por encima
     TrafficIcon pickedIcon; //Icono seleccionado
     GlobeAnnotation pickedAnnotation; //Globo selecionado
@@ -64,9 +62,11 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     * Constructor de Traffic displayer
     * @param wwd 
     */
-    public TrafficDisplayer(WorldWindow wwd)
+    public TrafficDisplayer(WorldWindow wwd, TrafficPickedListener trafficPickedListener)
     {
         this.wwd=wwd;
+        this.trafficPickedListener = trafficPickedListener;
+        
         wwd.getSceneController().getDrawContext().setPickPointFrustumDimension(
                             new Dimension(40, 40));
         wwd.addSelectListener(this);
@@ -261,11 +261,8 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         }
     }
 
-    
-
-
     /**
-     * Callback cuando se realiza un evento sobre un item
+     * Callback when an action is performed over a wwd item.
      * @param event 
      */
     @Override
@@ -309,43 +306,50 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     }
     
     /**
-     * Muestra el globo del traffic selecionado
+     * 
      * @param o 
      */
-    private void pick(Object o)
-    {
-              
-        if (this.pickedIcon == o)
-            return; 
-
-        if (o != null && o instanceof TrafficIcon)
-        {
-            //Borra todos los globos
-            annotationLayer.removeAllAnnotations();
-            TrafficIcon icon = (TrafficIcon) o;
-            this.pickedIcon=icon;
-            TrafficSimulated traffic = trafficSimulationMap.get(icon.getIcaoCode());
-  
-            if(traffic==null)
-            {
-                return;
+//    private void pick(Object o) {
+//        if (o instanceof Polygon) {
+//            Polygon selectedPolygon = (Polygon) o;
+//            TrafficPolygon trafficPolygon = findTrafficPolygonByPolygon(selectedPolygon);
+//
+//            if (trafficPolygon != null) {
+//                // Output details to the console or handle them as needed
+//                System.out.println("Picked Traffic Polygon:");
+//                System.out.println("ICAO Code: " + trafficPolygon.getIcaoCode());
+//                System.out.println("Polygon Details: " + selectedPolygon.toString());
+//            } else {
+//                System.out.println("No TrafficPolygon associated with the selected polygon.");
+//            }
+//        }
+//    }
+        
+    public void pick(Object o) {
+        if (o instanceof Polygon) {
+            Polygon selectedPolygon = (Polygon) o;
+            TrafficPolygon trafficPolygon = findTrafficPolygonByPolygon(selectedPolygon);
+            System.out.println("CLICKADOOOOOOOOOOOOOOOOOOOOOOOOOO21387D9HDHDASKD AHSKD19 HD9198 ASD");
+            if (trafficPolygon != null) {
+                if (trafficPolygon.equals(pickedObject)) {
+                    trafficPickedListener.hideDetails();
+                } else {
+                    trafficPickedListener.showDetails(trafficPolygon.getIcaoCode(), trafficPolygon.toString());
+                }
+                pickedObject = trafficPolygon;
+            } else {
+                System.out.println("No TrafficPolygon associated with the selected polygon.");
             }
-            //Crea el globo con la info y añadelo a la layer
-            this.pickedAnnotation = new SlideShowAnnotation(            
-                    icon.getPosition());
-            //this.pickedAnnotation.setText(this.getAnnotationText(icon));
-            this.pickedAnnotation.setAlwaysOnTop(true);
-            pickedAnnotation.getAttributes().setSize(
-                new Dimension(280, 0)); 
-            annotationLayer.addAnnotation(pickedAnnotation);
         }
-        else
-        {
-            //Limpia toda la selección
-            annotationLayer.removeAllAnnotations();
-            pickedIcon=null;
-            pickedAnnotation=null;
+    }
+    
+    private TrafficPolygon findTrafficPolygonByPolygon(Polygon polygon) {
+        for (TrafficPolygon tp : trafficPolygonMap.values()) {
+            if (tp.getPolygon().equals(polygon)) {
+                return tp;
+            }
         }
+        return null; // Return null if no match found
     }
     
     /**

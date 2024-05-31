@@ -1,5 +1,7 @@
 package TFM;
 
+import TFM.GUI.ExecuteCommandListener;
+import TFM.GUI.TimeUpdateListener;
 import TFM.Atmosphere.AtmosphericModel;
 import TFM.Atmosphere.InternationalStandardAtmosphere;
 import TFM.simulationEvents.Command;

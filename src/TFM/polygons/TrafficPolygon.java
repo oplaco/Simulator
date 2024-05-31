@@ -61,7 +61,7 @@ public class TrafficPolygon{
             corners.add(cornerSE);
             
             // Create and texture the square
-            polygon = new Polygon(corners);
+            polygon = new Polygon(corners);       
             
             polygon.setTextureImageSource("src/plane.png", texCoords, 4);
                 this.icaoCode = ts.getHexCode();           
