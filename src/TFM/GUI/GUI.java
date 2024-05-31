@@ -51,6 +51,8 @@ import gov.nasa.worldwind.view.BasicView;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
@@ -116,6 +118,7 @@ public class GUI {
         protected JPanel controlPanel;
         protected LayerPanel layerPanel;
         protected StatisticsPanel statsPanel;
+        protected DetailViewPanel detailViewPanel;
 
         //RouteController
         RouteController routeController;
@@ -123,20 +126,17 @@ public class GUI {
         // Timer to manage debouncing
         private Timer debounceTimer;
         private double viewAltitude;
-        //Simulation simulation;
         
-            // Map to hold multiple simulations
+        // Map to hold multiple simulations
         private Map<String, Simulation> simulationMap = new HashMap<>();
         // Attribute to keep track of the currently active simulation
         private Simulation activeSimulation;
 
-        //Antenna displayer
+        //TrafficDisplayer displayer
         private TrafficDisplayer trafficDisplayer;
 
-        public AppFrame() {
-            
-            this.initialize(true, true, false);
-            
+        public AppFrame() {          
+            this.initialize(true, true, false);           
         }
 
         public AppFrame(Dimension size) {
@@ -146,6 +146,51 @@ public class GUI {
 
         public AppFrame(boolean includeStatusBar, boolean includeLayerPanel, boolean includeStatsPanel) {
             this.initialize(includeStatusBar, includeLayerPanel, includeStatsPanel);
+        }
+        
+        protected void initialize(boolean includeStatusBar, boolean includeLayerPanel, boolean includeStatsPanel) {
+            setupWorldWindow(includeStatusBar);
+            setupSimulation();
+            setupDebounceTimer();
+            JPanel controlPanel = setupControlPanel(includeLayerPanel);
+            JLayeredPane layeredPane = setupLayeredPane();
+            setupSplitPane(controlPanel, layeredPane);
+            if (includeStatsPanel || System.getProperty("gov.nasa.worldwind.showStatistics") != null) {
+                setupStatsPanel();
+            }
+            setupViewControlsLayer();
+            registerRenderingExceptionListener();
+            registerSelectListeners();
+            centerAndResizeApplication();
+            insertLayers();
+            setupWindowListener();
+            this.pack();
+        }
+
+        private void setupWorldWindow(boolean includeStatusBar) {
+            this.wwjPanel = this.createAppPanel(this.canvasSize, includeStatusBar);
+            this.wwjPanel.setPreferredSize(canvasSize);
+        }
+
+        private void setupSimulation() {
+            String filePath = "src/simulation files/twoplaneTCAS.csv"; 
+            List<SimulationEvent> events = SimulationFileReader.readCSVFile(filePath);
+            this.detailViewPanel = new DetailViewPanel();
+            this.trafficDisplayer = new TrafficDisplayer(this.getWwd(), detailViewPanel);
+            addSimulation("DefaultSimulation", new Simulation(events, this.trafficDisplayer));
+            setActiveSimulation("DefaultSimulation");
+
+            this.getWwd().getView().addPropertyChangeListener(new PropertyChangeListener() {
+                @Override
+                public void propertyChange(PropertyChangeEvent evt) {
+                    Object newValue = evt.getNewValue();
+                    if (newValue instanceof BasicView) {
+                        BasicView view = (BasicView) newValue;
+                        Position eyePosition = view.getEyePosition();
+                        debounceUpdate(eyePosition.getAltitude());
+                    }
+                }
+            });
         }
         
         private void debounceUpdate(double altitude) {
@@ -159,174 +204,146 @@ public class GUI {
             debounceTimer.restart(); // Restart the timer
         }
 
-        protected void initialize(boolean includeStatusBar, boolean includeLayerPanel, boolean includeStatsPanel) {
-            // Create the WorldWindow.
-            this.wwjPanel = this.createAppPanel(this.canvasSize, includeStatusBar);
-            this.wwjPanel.setPreferredSize(canvasSize);
-
-            //Reading the events from testing file to create the default simulation.
-            String filePath = "src/simulation files/twoplaneTCAS.csv"; 
-            List<SimulationEvent> events = SimulationFileReader.readCSVFile(filePath);
-            DetailViewPanel detailViewPanel = new DetailViewPanel();
-            this.trafficDisplayer = new TrafficDisplayer(this.getWwd(), detailViewPanel);
-            addSimulation("DefaultSimulation", new Simulation(events, this.trafficDisplayer));
-            setActiveSimulation("DefaultSimulation");
-             
-            
-            this.getWwd().getView().addPropertyChangeListener(new PropertyChangeListener() {
-                @Override
-                public void propertyChange(PropertyChangeEvent evt) {
-                    Object newValue = evt.getNewValue();
-                    if (newValue instanceof BasicView) {
-                        BasicView view = (BasicView) newValue;
-                        Position eyePosition = view.getEyePosition();
-                        
-                        // Debounce updates to trafficDisplayer
-                        debounceUpdate(eyePosition.getAltitude());
-                    }
-                }
-            });
-                  
-            // Initialize the debounce timer with a delay and the action to perform
-            debounceTimer = new Timer(50, e -> { // 100 ms delay
-                // Perform your update action here. This block will only execute after 500ms of inactivity.
-                // Since the actionListener cannot directly access `eyePosition` from here,
-                // you need to store it somewhere accessible on the last call to `debounceUpdate`.
+        private void setupDebounceTimer() {
+            debounceTimer = new Timer(50, e -> {
                 trafficDisplayer.viewUpdated(viewAltitude);
             });
-            debounceTimer.setRepeats(false); // Ensure the timer only fires once after the last event
+            debounceTimer.setRepeats(false);
+        }
 
-            
-            
-            // Put the pieces together.
-            this.getContentPane().add(wwjPanel, BorderLayout.CENTER);
-            
-            
-            // Add the detail view panel to the frame, initially hidden
-            detailViewPanel.setVisible(false);
-            this.getContentPane().add(detailViewPanel, BorderLayout.EAST);
-        
-            //Include all the menus.
+        private JPanel setupControlPanel(boolean includeLayerPanel) {
+            JPanel controlPanel = new JPanel(new BorderLayout(10, 10));
             if (includeLayerPanel) {
-                this.controlPanel = new JPanel(new BorderLayout(10, 10));
                 this.layerPanel = new LayerPanel(this.getWwd());
-                this.controlPanel.add(this.layerPanel, BorderLayout.CENTER);
-                
-                //Añade el controllador de la ruta al menu lateral
-                //this.controlPanel.add(new RoutesMenu(routeController),BorderLayout.AFTER_LAST_LINE); //add custom menu
-                
-                // Create a vertical BoxLayout
+                controlPanel.add(this.layerPanel, BorderLayout.CENTER);
+
                 Box controlBox = Box.createVerticalBox();
-                // Time Management Menu
                 TimeManagementMenu timeManagementPanel = new TimeManagementMenu(this.activeSimulation);
                 this.activeSimulation.setTimeUpdateListener(timeManagementPanel);
-   
-                //Console Menu
+
                 Console console = new Console(this.activeSimulation);
-                
-                // Add timeManagementPanel and console to the vertical BoxLayout
                 controlBox.add(timeManagementPanel);
                 controlBox.add(console);
 
-                // Add the vertical BoxLayout to the layerPanel using BorderLayout.CENTER
-                this.controlPanel.add(controlBox, BorderLayout.AFTER_LAST_LINE);
-                
-                this.controlPanel.add(new FlatWorldPanel(this.getWwd()), BorderLayout.NORTH);
-                this.getContentPane().add(this.controlPanel, BorderLayout.WEST);
+                controlPanel.add(controlBox, BorderLayout.SOUTH);
+                controlPanel.add(new FlatWorldPanel(this.getWwd()), BorderLayout.NORTH);
             }
+            return controlPanel;
+        }
 
-            if (includeStatsPanel || System.getProperty("gov.nasa.worldwind.showStatistics") != null) {
-                this.statsPanel = new StatisticsPanel(this.wwjPanel.getWwd(), new Dimension(250, canvasSize.height));
-                this.getContentPane().add(this.statsPanel, BorderLayout.EAST);
-            }
+        private JLayeredPane setupLayeredPane() {
+            JLayeredPane layeredPane = new JLayeredPane();
+            layeredPane.setPreferredSize(canvasSize);
 
-            // Create and install the view controls layer and register a controller for it with the WorldWindow.
+            layeredPane.addComponentListener(new ComponentAdapter() {
+                @Override
+                public void componentResized(ComponentEvent e) {
+                    Dimension newSize = layeredPane.getSize();
+                    wwjPanel.setBounds(0, 0, newSize.width, newSize.height);
+                    detailViewPanel.setBounds(newSize.width - 300, 0, 300, newSize.height);
+                    wwjPanel.revalidate();
+                    wwjPanel.repaint();
+                    detailViewPanel.revalidate();
+                    detailViewPanel.repaint();
+                }
+            });
+
+            wwjPanel.setBounds(0, 0, canvasSize.width, canvasSize.height);
+            detailViewPanel.setBounds(canvasSize.width - 300, 0, 300, canvasSize.height);
+            detailViewPanel.setOpaque(false);
+            detailViewPanel.setVisible(false);
+
+            layeredPane.add(wwjPanel, JLayeredPane.DEFAULT_LAYER);
+            layeredPane.add(detailViewPanel, JLayeredPane.PALETTE_LAYER);
+
+            return layeredPane;
+        }
+
+        private void setupSplitPane(JPanel controlPanel, JLayeredPane layeredPane) {
+            JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, controlPanel, layeredPane);
+            splitPane.setDividerLocation(0); // 15% for the control panel
+            splitPane.setResizeWeight(0);
+            this.getContentPane().add(splitPane, BorderLayout.CENTER);
+        }
+
+        private void setupStatsPanel() {
+            this.statsPanel = new StatisticsPanel(this.wwjPanel.getWwd(), new Dimension(250, canvasSize.height));
+            this.getContentPane().add(this.statsPanel, BorderLayout.EAST);
+        }
+
+        private void setupViewControlsLayer() {
             ViewControlsLayer viewControlsLayer = new ViewControlsLayer();
             insertBeforeCompass(getWwd(), viewControlsLayer);
             this.getWwd().addSelectListener(new ViewControlsSelectListener(this.getWwd(), viewControlsLayer));
+        }
 
-            // Register a rendering exception listener that's notified when exceptions occur during rendering.
+        private void registerRenderingExceptionListener() {
             this.wwjPanel.getWwd().addRenderingExceptionListener((Throwable t) -> {
                 if (t instanceof WWAbsentRequirementException) {
                     String message = "Computer does not meet minimum graphics requirements.\n";
                     message += "Please install up-to-date graphics driver and try again.\n";
                     message += "Reason: " + t.getMessage() + "\n";
                     message += "This program will end when you press OK.";
-
                     JOptionPane.showMessageDialog(AppFrame.this, message, "Unable to Start Program",
                             JOptionPane.ERROR_MESSAGE);
                     System.exit(-1);
                 }
             });
+        }
 
-            // Search the layer list for layers that are also select listeners and register them with the World
-            // Window. This enables interactive layers to be included without specific knowledge of them here.
+        private void registerSelectListeners() {
             for (Layer layer : this.wwjPanel.getWwd().getModel().getLayers()) {
                 if (layer instanceof SelectListener) {
                     this.getWwd().addSelectListener((SelectListener) layer);
                 }
             }
+        }
 
-            
-
-            // Center the application on the screen.
+        private void centerAndResizeApplication() {
             WWUtil.alignComponent(null, this, AVKey.CENTER);
             this.setResizable(true);
-            
+        }
 
-            //Insert layers in wwd
+        private void insertLayers() {
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getAnnotationLayer());
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getTrafficLayer());
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getTrafficPolygonLayer());
-            
+
             RenderableLayer airportLayer = new RenderableLayer();
             airportLayer.setName("Airport Renderable Layer");
             RenderableLayer servitudesLayer = new RenderableLayer();
-            airportLayer.setName("Servitudes Layer");
+            servitudesLayer.setName("Servitudes Layer");
             IconLayer navAidLayer = new IconLayer();
             navAidLayer.setName("NavAids Layer");
 
             List<Runway> runwayList = Runway.createRunwaysFromDB("ES");
-            for (Runway runway : runwayList) {      
+            for (Runway runway : runwayList) {
                 airportLayer.addRenderable(runway.getPolygon());
-                TakeOffSurface takeOffSurface = new TakeOffSurface(runway.getLength(),runway.getRunwayEnd(),runway.getBearing());
+                TakeOffSurface takeOffSurface = new TakeOffSurface(runway.getLength(), runway.getRunwayEnd(), runway.getBearing());
                 servitudesLayer.addRenderable(takeOffSurface.getPolygon());
             }
-            
+
             List<Navaid> navaidList = Navaid.getNavAidsFromDB("ES");
-            for (Navaid navaid : navaidList) {      
+            for (Navaid navaid : navaidList) {
                 navAidLayer.addIcon(navaid);
             }
-            
+
             insertAfterPlacenames(this.getWwd(), airportLayer);
             insertAfterPlacenames(this.getWwd(), servitudesLayer);
-            insertAfterPlacenames(this.getWwd(), navAidLayer); 
-            
-            //insertAfterPlacenames(this.getWwd(), new LatLonGraticuleLayer());                       
-            //insertAfterPlacenames(this.getWwd(), routeController.getPlanesLayer());
-            //insertAfterPlacenames(this.getWwd(), routeController.getRouteLayer());
-            //insertAfterPlacenames(this.getWwd(), routeController.getAirportLayer());
-            //insertAfterPlacenames(this.getWwd(), new AirSpaceLayer().layer);
-            
-            
-            // Limpia todos los threads antes de salir de la app
+            insertAfterPlacenames(this.getWwd(), navAidLayer);
+        }
+
+        private void setupWindowListener() {
             setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
             addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowClosing(java.awt.event.WindowEvent evt) {
-                    System.out.println("CERRANDO LA VENTANA");
-                    //routeController.stopit();
-                    //antennaDisplayer.stopit();
-                    activeSimulation.stopit(); //We should stop all simulations for the moment just the activeSimulation
+                public void windowClosing(java.awt.event.WindowEvent evt) {
+                    System.out.println("CLOSING THE WINDOW");
+                    activeSimulation.stopit(); // We should stop all simulations; for the moment, just the activeSimulation
                 }
             });
-    
-            //System.out.println(this.wwjPanel.getWwd().getView().getEyePosition().getAltitude());
-            System.out.println(this.wwjPanel.getWwd().getSceneController().getView().getEyePosition());
-            this.pack();
-            
-             
-                       
         }
+
+
 
         protected AppPanel createAppPanel(Dimension canvasSize, boolean includeStatusBar) {
             return new AppPanel(canvasSize, includeStatusBar);
