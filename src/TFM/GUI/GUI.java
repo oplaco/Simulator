@@ -306,7 +306,6 @@ public class GUI {
 
         private void insertLayers() {
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getAnnotationLayer());
-            insertAfterPlacenames(this.getWwd(), trafficDisplayer.getTrafficLayer());
             insertAfterPlacenames(this.getWwd(), trafficDisplayer.getTrafficPolygonLayer());
 
             RenderableLayer airportLayer = new RenderableLayer();

@@ -12,7 +12,7 @@ import static TFM.AircraftControl.AircraftControlCommand.CommandType.SPEED;
 import static TFM.AircraftControl.AircraftControlCommand.CommandType.VERTICAL_RATE;
 import TFM.AircraftControl.ControllableAircraft;
 import TFM.Simulation;
-import TFM.TrafficIcon;
+import TFM.Others.TrafficIcon;
 import TFM.Coordinates.Coordinate;
 import TFM.utils.LogEntry;
 import TFM.utils.UnitConversion;

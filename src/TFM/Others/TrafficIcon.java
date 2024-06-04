@@ -1,4 +1,4 @@
-package TFM;
+package TFM.Others;
 
 import gov.nasa.worldwind.geom.Position;
 import gov.nasa.worldwind.render.UserFacingIcon;

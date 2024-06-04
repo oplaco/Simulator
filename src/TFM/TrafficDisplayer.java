@@ -39,30 +39,26 @@ import org.opensky.libadsb.Position;
 public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener,AltitudeScaleListener{
 
     TrafficSimulationMap trafficSimulationMap; //Map to store Traffic from simulation environment instead of ADSB.
-    private IconLayer trafficLayer; //Layer sobre el que se pinta el trafico
+    private Map<String, TrafficPolygon> trafficPolygonMap = new ConcurrentHashMap<>(); //Map to store TrafficPolygons
+    
     private RenderableLayer trafficPolygonLayer;
     private AnnotationLayer annotationLayer; //Layer sobre el que se muestran las anotaciones
     private WorldWindow wwd; //Referencia al core de wwd
     private View view;
     
     //Picked Traffic
-    TrafficPickedListener trafficPickedListener;
-    TrafficPolygon  pickedPolygon;
-    TrafficSimulated pickedTraffic;
-    
-    TrafficIcon lastOver; //Ultimo icono por el que se pasó por encima
-    TrafficIcon pickedIcon; //Icono seleccionado
-    GlobeAnnotation pickedAnnotation; //Globo selecionado
+    private TrafficPickedListener trafficPickedListener;
+    private TrafficSimulated pickedTraffic;
+
     boolean enabled = true;
     private double distanceEyePositionToViewCenter; // Meters (m)
-    
-    private Map<String, TrafficPolygon> trafficPolygonMap = new ConcurrentHashMap<>(); //Map to store TrafficPolygons
-
     private double altitudScale=1;
+
     
     /**
     * Constructor de Traffic displayer
     * @param wwd 
+    * @param trafficPickedListener 
     */
     public TrafficDisplayer(WorldWindow wwd, TrafficPickedListener trafficPickedListener)
     {
@@ -83,16 +79,9 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         } catch (IOException ex) {
             Logger.getLogger(TrafficDisplayer.class.getName()).log(Level.SEVERE, null, ex);
         }
-
         
-        trafficLayer = new IconLayer();
-        trafficLayer.setName("Traffic Old Icon Layer");     
-        trafficLayer.setViewClippingEnabled(false);
-     
         trafficPolygonLayer = new RenderableLayer();
         trafficPolygonLayer.setName("Traffic Polygon Layer");
-        
-        
         annotationLayer = new AnnotationLayer();
         annotationLayer.setName("Traffic Annotations");
         
@@ -102,6 +91,7 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
      * Callback cuando se modifica la altitud
      * @param as 
      */
+    @Override
     public void setAltitudeScale(double as)
     {
         this.altitudScale=as;
@@ -112,31 +102,6 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         
     }
     
-//    public void stopit()
-//    {
-//        try
-//        {
-//            trafficSimulationMap.stopit();
-//            
-//        }catch(Exception ex)
-//        {
-//            
-//        }
-//    }
-    
-    public IconLayer getTrafficLayer() {
-        return trafficLayer;
-    }
-
-    public RenderableLayer getTrafficPolygonLayer() {
-        return trafficPolygonLayer;
-    }
-    
-    
-        
-    public AnnotationLayer getAnnotationLayer() {
-        return annotationLayer;
-    }
     /**
      * Convierte la posicion de TrafficSimulated a posicion del WorldWind
      * @param t
@@ -158,23 +123,6 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
     }
     
     /**
-     * Busca el icono del avion indicado en la traffics Layer
-     * @param icaoCode
-     * @return 
-     */
-    TrafficIcon findIcon(String icaoCode)
-    {
-        Iterable icons = trafficLayer.getIcons();
-        for(Object icon : icons)
-        {
-            if(((TrafficIcon) icon).getIcaoCode().equals(icaoCode))     
-            {
-                return ((TrafficIcon) icon);
-            }
-        }
-        return null;
-    }
-    /**
      * Añade un traffic cuando avisa el listener
      * @param trfc 
      */
@@ -184,11 +132,6 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         {
             return;
         }
-        System.out.println("planeStarted method");
-        //TrafficIcon icon = new TrafficIcon(
-               //trfc.getHexCode(),getNasaPos(trfc));
-        //icon.setSize(new Dimension(30,30));
-        //trafficLayer.addIcon(icon);
         TrafficPolygon trafficPolygon = new TrafficPolygon(trfc,getNasaPos(trfc), distanceEyePositionToViewCenter);
         trafficPolygonMap.put(trfc.getHexCode(), trafficPolygon);
         trafficPolygonLayer.addRenderable(trafficPolygon.getPolygon());
@@ -196,11 +139,10 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         this.wwd.redraw();
     }
 
-/**
- * Updates the plane variables, removes the old polygon and creates a new one.
- * @param trfc 
- */
-    
+    /**
+     * Updates the plane variables, removes the old polygon and creates a new one.
+     * @param trfc 
+     */   
     @Override
     public void planeUpdated(TrafficSimulated trfc) {
         // Check if there is an existing polygon and remove it
@@ -234,7 +176,6 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
 
         this.wwd.redraw();
     }
-
     
     public void viewUpdated(double altitude){
         //System.out.println("From Traffic Displayer the altitude is: "+ altitude);
@@ -280,38 +221,10 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         {
             return;
         }
-        if(event.isRollover())
-        {
-            highlight(event.getTopObject());
-        }
         if(event.isLeftClick())
         {
             pick(event.getTopObject());
         }            
-    }
-    /**
-     * Controlla el highlighting del objeto que se pasa por encima con el raton
-     * @param o 
-     */
-    private void highlight(Object o)
-    {
-        // Manage highlighting of TrafficIcons.
-        if (this.lastOver == o)
-            return; //Still same object
-
-        // Turn off highlight if leaves
-        if (this.lastOver != null)
-        {
-            this.lastOver.setHighlighted(false);
-            this.lastOver = null;
-        }
-
-        // Turn on highlight if object selected.
-        if (o != null && o instanceof TrafficIcon)
-        {
-            this.lastOver = (TrafficIcon) o;
-            this.lastOver.setHighlighted(true);
-        }
     }
           
     public void pick(Object o) {
@@ -339,18 +252,15 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
                     pickedTraffic = null;
                 }
             } else {
-                // If a different polygon is clicked, show its details and update pickedPolygon and pickedTraffic
+                // If a different polygon is clicked, show its details and update pickedTraffic
                 trafficPickedListener.showDetails(pickedTrafficTemp);
-                pickedPolygon = trafficPolygon;
                 pickedTraffic = pickedTrafficTemp;
             }
         } else {
             System.out.println("Selected object is not a Polygon.");
         }
     }
-
-
-    
+  
     private TrafficPolygon findTrafficPolygonByPolygon(Polygon polygon) {
         for (TrafficPolygon tp : trafficPolygonMap.values()) {
             if (tp.getPolygon().equals(polygon)) {
@@ -360,6 +270,14 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         return null; // Return null if no match found
     }
 
+    public RenderableLayer getTrafficPolygonLayer() {
+        return trafficPolygonLayer;
+    }   
+           
+    public AnnotationLayer getAnnotationLayer() {
+        return annotationLayer;
+    }
+    
     public TrafficSimulationMap getTrafficSimulationmap() {
         return trafficSimulationMap;
     }
