@@ -4,8 +4,8 @@
  */
 package TFM.Routes;
 
-import classes.base.Airport;
-import classes.base.WayPoint;
+import TFM.Coordinates.Airport;
+import TFM.Coordinates.WayPoint;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;

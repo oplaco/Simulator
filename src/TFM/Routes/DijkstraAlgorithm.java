@@ -3,7 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package TFM.Routes;
-import classes.base.Coordinate;
+import TFM.Coordinates.Coordinate;
 import java.util.*;
 /**
  * Represents an implementation of Dijkstra's algorithm for finding the shortest path in a graph.

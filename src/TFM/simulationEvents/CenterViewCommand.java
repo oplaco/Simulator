@@ -5,8 +5,8 @@
 package TFM.simulationEvents;
 
 import TFM.Simulation;
-import TFM.TrafficSimulationMap;
-import classes.base.TrafficSimulated;
+import TFM.AircraftControl.TrafficSimulationMap;
+import TFM.AircraftControl.TrafficSimulated;
 import java.util.Iterator;
 import java.util.Map;
 import traffic.Traffic;

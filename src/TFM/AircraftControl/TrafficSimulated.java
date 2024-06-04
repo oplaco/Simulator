@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package classes.base;
+package TFM.AircraftControl;
 
 import TFM.AircraftControl.AircraftControlCommand;
 import static TFM.AircraftControl.AircraftControlCommand.CommandType.ALTITUDE;
@@ -13,6 +13,7 @@ import static TFM.AircraftControl.AircraftControlCommand.CommandType.VERTICAL_RA
 import TFM.AircraftControl.ControllableAircraft;
 import TFM.Simulation;
 import TFM.TrafficIcon;
+import TFM.Coordinates.Coordinate;
 import TFM.utils.LogEntry;
 import TFM.utils.UnitConversion;
 import classes.googleearth.GoogleEarthTraffic;

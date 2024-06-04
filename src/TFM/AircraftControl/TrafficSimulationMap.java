@@ -2,10 +2,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package TFM;
+package TFM.AircraftControl;
 
-import classes.base.TrafficSimulated;
-import classes.base.TrafficSimulatedListener;
+import TFM.AircraftControl.TrafficSimulated;
+import TFM.AircraftControl.TrafficSimulatedListener;
 import traffic.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;

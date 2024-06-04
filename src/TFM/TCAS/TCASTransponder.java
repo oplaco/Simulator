@@ -2,16 +2,16 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package TCAS;
+package TFM.TCAS;
 
 import TFM.AircraftControl.AircraftControlCommand;
 import TFM.AircraftControl.ControllableAircraft;
 import TFM.AircraftControl.ICommandSource;
 import TFM.utils.UnitConversion;
 import TFM.utils.Vector2D;
-import classes.base.Coordinate;
-import classes.base.Pilot;
-import classes.base.TrafficSimulated;
+import TFM.Coordinates.Coordinate;
+import TFM.AircraftControl.Pilot;
+import TFM.AircraftControl.TrafficSimulated;
 import gov.nasa.worldwind.WorldWindow;
 import gov.nasa.worldwind.geom.Vec4;
 import java.util.Map;

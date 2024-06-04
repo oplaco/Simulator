@@ -6,10 +6,10 @@
 package TFM.Routes;
 
 import TFM.Performance.VerticalProfile;
-import classes.base.Airport;
-import classes.base.Coordinate;
-import classes.base.TrafficSimulated;
-import classes.base.WayPoint;
+import TFM.Coordinates.Airport;
+import TFM.Coordinates.Coordinate;
+import TFM.AircraftControl.TrafficSimulated;
+import TFM.Coordinates.WayPoint;
 import classes.googleearth.GoogleEarth;
 import gov.nasa.worldwind.WorldWind;
 import gov.nasa.worldwind.avlist.AVKey;

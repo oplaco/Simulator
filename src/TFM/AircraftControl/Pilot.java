@@ -3,10 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package classes.base;
+package TFM.AircraftControl;
 
 import TFM.Routes.Route;
-import TCAS.TCASTransponder;
+import TFM.TCAS.TCASTransponder;
 import TFM.AircraftControl.AircraftControlCommand;
 import TFM.AircraftControl.ControllableAircraft;
 import TFM.AircraftControl.ICommandSource;
@@ -18,8 +18,9 @@ import TFM.Performance.AircraftSpecifications;
 import TFM.Performance.FlightPhase;
 import TFM.Performance.VerticalProfile;
 import TFM.Simulation;
+import TFM.Coordinates.Coordinate;
 import TFM.utils.UnitConversion;
-import static classes.base.TrafficSimulated.FLY_LOXODROMIC;
+import static TFM.AircraftControl.TrafficSimulated.FLY_LOXODROMIC;
 import classes.googleearth.GoogleEarthTraffic;
 import java.awt.Color;
 import java.util.Map;

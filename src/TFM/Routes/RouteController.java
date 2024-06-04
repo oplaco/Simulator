@@ -1,8 +1,8 @@
 package TFM.Routes;
 
 import TFM.AltitudeScaleListener;
-import classes.base.TrafficSimulated;
-import classes.base.TrafficSimulatedListener;
+import TFM.AircraftControl.TrafficSimulated;
+import TFM.AircraftControl.TrafficSimulatedListener;
 import classes.simulator.FlightPlan;
 import gov.nasa.worldwind.WorldWindow;
 import gov.nasa.worldwind.layers.IconLayer;

@@ -4,7 +4,7 @@
  */
 package TFM.GUI;
 
-import classes.base.TrafficSimulated;
+import TFM.AircraftControl.TrafficSimulated;
 
 /**
  *

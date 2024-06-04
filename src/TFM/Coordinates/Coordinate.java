@@ -1,4 +1,4 @@
-package classes.base;
+package TFM.Coordinates;
 
 import classes.googleearth.GoogleEarth;
 import gov.nasa.worldwind.geom.Position;

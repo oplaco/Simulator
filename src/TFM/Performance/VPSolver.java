@@ -7,8 +7,8 @@ package TFM.Performance;
 import TFM.Simulation;
 import TFM.utils.UnitConversion;
 import TFM.Routes.Route;
-import classes.base.TrafficSimulated;
-import classes.base.WayPoint;
+import TFM.AircraftControl.TrafficSimulated;
+import TFM.Coordinates.WayPoint;
 
 /**
  *

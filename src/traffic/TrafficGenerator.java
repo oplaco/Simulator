@@ -5,7 +5,7 @@
  */
 package traffic;
 
-import classes.base.TrafficSimulatedListener;
+import TFM.AircraftControl.TrafficSimulatedListener;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**

@@ -5,7 +5,7 @@
  */
 package classes.googleearth;
 
-import classes.base.Coordinate;
+import TFM.Coordinates.Coordinate;
 import TFM.Routes.Route;
 import java.awt.Color;
 import java.awt.Desktop;

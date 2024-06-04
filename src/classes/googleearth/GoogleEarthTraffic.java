@@ -5,8 +5,8 @@
  */
 package classes.googleearth;
 
-import classes.base.Coordinate;
-import classes.base.TrafficSimulated;
+import TFM.Coordinates.Coordinate;
+import TFM.AircraftControl.TrafficSimulated;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.io.File;

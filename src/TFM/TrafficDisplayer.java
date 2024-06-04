@@ -4,11 +4,12 @@
  */
 package TFM;
 
+import TFM.AircraftControl.TrafficSimulationMap;
 import TFM.GUI.TrafficPickedListener;
 import TFM.polygons.TrafficPolygon;
-import classes.base.Coordinate;
-import classes.base.TrafficSimulated;
-import classes.base.TrafficSimulatedListener;
+import TFM.Coordinates.Coordinate;
+import TFM.AircraftControl.TrafficSimulated;
+import TFM.AircraftControl.TrafficSimulatedListener;
 import gov.nasa.worldwind.View;
 import gov.nasa.worldwind.WorldWindow;
 import gov.nasa.worldwind.event.SelectEvent;
@@ -264,12 +265,9 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         {
             return;
         }
-        TrafficIcon icon = findIcon(trfc.getHexCode());
-        if(icon!=null)
-        {
-            trafficLayer.removeIcon(icon);
-            this.wwd.redraw(); 
-        }
+        TrafficPolygon existingPolygon = trafficPolygonMap.get(trfc.getHexCode());
+        trafficPolygonLayer.removeRenderable(existingPolygon.getPolygon());
+        this.wwd.redraw(); 
     }
 
     /**
@@ -361,43 +359,6 @@ public class TrafficDisplayer implements TrafficSimulatedListener,SelectListener
         }
         return null; // Return null if no match found
     }
-    
-    /**
-     * Crea el texto que va dentro del globo
-     * @param trafficIcon
-     * @return 
-     */
-//    private String getAnnotationText(TrafficIcon trafficIcon)
-//    {
-//
-//        Traffic traffic = trafficSimulationMap.get(trafficIcon.getIcaoCode());
-//
-//        double altitude  = traffic.getAltitude();
-//        double latitude  = traffic.getLatitude();
-//        double longitude = traffic.getLongitude();
-//        double groundSpeed = traffic.getGs();
-//        double heading = traffic.getHeading();
-//        double verticalRate = traffic.getVr();
-//
-//        String position = "("+ String.format("%.3f", latitude)+"º, "
-//                + String.format("%.3f", longitude)+"º, "
-//                + String.format("%.0f", altitude) +"ft )";
-//        String gsStr = String.format("%.1f", groundSpeed)+" knots";
-//        String hStr = String.format("%.1f",heading) + "º";
-//        String vrStr = String.format("%.1f", verticalRate) + " ft/min";
-//        
-//        //El texto va en formato HTML para mostrar diferentes tamaños y colores
-//        String text = "<p>\n<b><font color=\"#664400\">Traffic Information of: "
-//                +trafficIcon.getIcaoCode()+"</font></b><br />\n"
-//                +"<p><b>Position: </b>"+ position+"</p>"
-//                +"<p><b>Ground Speed: </b>"+ gsStr+"</p>"
-//                +"<p><b>Heading: </b>"+ hStr+"</p>"
-//                +"<p><b>verticalRate: </b>"+ vrStr+"</p>"
-//                +"<p><b>  </b>"+"</p></p>";
-//                     
-//        return text;
-//                
-//    }
 
     public TrafficSimulationMap getTrafficSimulationmap() {
         return trafficSimulationMap;
