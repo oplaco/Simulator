@@ -4,7 +4,7 @@
  */
 package TFM.simulationEvents;
 
-import TFM.Simulation;
+import TFM.Core.Simulation;
 
 /**
  *

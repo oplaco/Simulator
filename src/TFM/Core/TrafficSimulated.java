@@ -3,15 +3,18 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package TFM.AircraftControl;
+package TFM.Core;
 
+import TFM.AircraftControl.AircraftControlCommand;
 import TFM.AircraftControl.AircraftControlCommand;
 import static TFM.AircraftControl.AircraftControlCommand.CommandType.ALTITUDE;
 import static TFM.AircraftControl.AircraftControlCommand.CommandType.COURSE;
 import static TFM.AircraftControl.AircraftControlCommand.CommandType.SPEED;
 import static TFM.AircraftControl.AircraftControlCommand.CommandType.VERTICAL_RATE;
 import TFM.AircraftControl.ControllableAircraft;
-import TFM.Simulation;
+import TFM.AircraftControl.ControllableAircraft;
+import TFM.AircraftControl.TrafficSimulatedListener;
+import TFM.Core.Simulation;
 import TFM.Others.TrafficIcon;
 import TFM.Coordinates.Coordinate;
 import TFM.utils.LogEntry;

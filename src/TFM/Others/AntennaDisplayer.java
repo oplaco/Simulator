@@ -4,7 +4,7 @@
  */
 package TFM.Others;
 
-import TFM.AltitudeScaleListener;
+import TFM.GUI.AltitudeScaleListener;
 import TFM.Others.TrafficIcon;
 import gov.nasa.worldwind.WorldWindow;
 import gov.nasa.worldwind.event.SelectEvent;

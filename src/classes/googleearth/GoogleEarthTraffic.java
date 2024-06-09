@@ -6,7 +6,7 @@
 package classes.googleearth;
 
 import TFM.Coordinates.Coordinate;
-import TFM.AircraftControl.TrafficSimulated;
+import TFM.Core.TrafficSimulated;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.io.File;

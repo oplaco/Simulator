@@ -4,10 +4,10 @@
  */
 package TFM.Performance;
 
-import TFM.Simulation;
+import TFM.Core.Simulation;
 import TFM.utils.UnitConversion;
 import TFM.Routes.Route;
-import TFM.AircraftControl.TrafficSimulated;
+import TFM.Core.TrafficSimulated;
 import TFM.Coordinates.WayPoint;
 
 /**

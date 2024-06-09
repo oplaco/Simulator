@@ -2,14 +2,15 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package TFM;
+package TFM.GUI;
 
-import TFM.AircraftControl.TrafficSimulationMap;
+import TFM.GUI.AltitudeScaleListener;
 import TFM.GUI.TrafficPickedListener;
 import TFM.polygons.TrafficPolygon;
 import TFM.Coordinates.Coordinate;
-import TFM.AircraftControl.TrafficSimulated;
 import TFM.AircraftControl.TrafficSimulatedListener;
+import TFM.Core.TrafficSimulated;
+import TFM.Others.TrafficSimulationMap;
 import gov.nasa.worldwind.View;
 import gov.nasa.worldwind.WorldWindow;
 import gov.nasa.worldwind.event.SelectEvent;

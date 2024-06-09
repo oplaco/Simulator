@@ -4,7 +4,7 @@
  */
 package TFM.GUI;
 
-import TFM.Simulation;
+import TFM.Core.Simulation;
 import TFM.simulationEvents.SimulationEvent;
 import TFM.simulationEvents.SimulationFileReader;
 import java.awt.Color;

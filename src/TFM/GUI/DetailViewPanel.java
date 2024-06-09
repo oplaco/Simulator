@@ -1,7 +1,7 @@
 package TFM.GUI;
 
 import TFM.utils.UnitConversion;
-import TFM.AircraftControl.TrafficSimulated;
+import TFM.Core.TrafficSimulated;
 import javax.swing.*;
 import java.awt.*;
 import java.text.DecimalFormat;

@@ -11,6 +11,8 @@ package TFM.AircraftControl;
  * Blueprint of how a potential ATC class could give orders directly to aircrafts.
  * This class should be instantiated where there is access to the trafficSimulationMap probably at simulation class.
  */
+import TFM.Others.TrafficSimulationMap;
+import TFM.Core.TrafficSimulated;
 import TFM.Coordinates.Coordinate;
 
 public class ATC implements ICommandSource {

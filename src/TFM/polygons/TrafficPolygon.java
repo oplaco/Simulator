@@ -12,7 +12,7 @@ package TFM.polygons;
  */
 
 import static TFM.utils.Constants.EARTH_RADIUS;
-import TFM.AircraftControl.TrafficSimulated;
+import TFM.Core.TrafficSimulated;
 //Different class Position from wwd and adsb.
 import gov.nasa.worldwind.geom.Position;
 import java.util.ArrayList;

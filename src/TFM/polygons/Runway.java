@@ -4,7 +4,7 @@
  */
 package TFM.polygons;
 
-import TFM.Simulation;
+import TFM.Core.Simulation;
 import gov.nasa.worldwind.geom.Angle;
 import gov.nasa.worldwind.geom.Position;
 import gov.nasa.worldwind.render.Polygon;

@@ -27,9 +27,7 @@
  */
 package TFM.GUI;
 
-import TFM.Routes.RouteController;
-import TFM.Simulation;
-import TFM.TrafficDisplayer;
+import TFM.Core.Simulation;
 import TFM.navAids.Navaid;
 import TFM.polygons.Runway;
 import TFM.polygons.TakeOffSurface;
@@ -120,9 +118,6 @@ public class GUI {
         protected StatisticsPanel statsPanel;
         protected DetailViewPanel detailViewPanel;
 
-        //RouteController
-        RouteController routeController;
-        
         // Timer to manage debouncing
         private Timer debounceTimer;
         private double viewAltitude;

@@ -1,6 +1,7 @@
-package TFM;
+package TFM.Core;
 
-import TFM.AircraftControl.TrafficSimulationMap;
+import TFM.Others.TrafficSimulationMap;
+import TFM.GUI.TrafficDisplayer;
 import TFM.GUI.ExecuteCommandListener;
 import TFM.GUI.TimeUpdateListener;
 import TFM.Atmosphere.AtmosphericModel;
@@ -9,9 +10,7 @@ import TFM.simulationEvents.Command;
 import TFM.simulationEvents.CommandFactory;
 import TFM.simulationEvents.SimulationEvent;
 import TFM.Coordinates.Coordinate;
-import TFM.AircraftControl.Pilot;
 import TFM.Routes.Route;
-import TFM.AircraftControl.TrafficSimulated;
 import gov.nasa.worldwind.View;
 import gov.nasa.worldwind.geom.Angle;
 import gov.nasa.worldwind.geom.Position;

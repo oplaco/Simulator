@@ -3,13 +3,18 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package TFM.AircraftControl;
+package TFM.Core;
 
+import TFM.Core.TrafficSimulated;
 import TFM.Routes.Route;
 import TFM.TCAS.TCASTransponder;
 import TFM.AircraftControl.AircraftControlCommand;
+import TFM.AircraftControl.AircraftControlCommand;
+import TFM.AircraftControl.ControllableAircraft;
 import TFM.AircraftControl.ControllableAircraft;
 import TFM.AircraftControl.ICommandSource;
+import TFM.AircraftControl.ICommandSource;
+import TFM.AircraftControl.PilotListener;
 import TFM.Atmosphere.AtmosphericModel;
 import TFM.Atmosphere.InternationalStandardAtmosphere;
 import TFM.Models.BearingStrategy;
@@ -17,10 +22,10 @@ import TFM.Models.SimpleBearingStrategy;
 import TFM.Performance.AircraftSpecifications;
 import TFM.Performance.FlightPhase;
 import TFM.Performance.VerticalProfile;
-import TFM.Simulation;
+import TFM.Core.Simulation;
 import TFM.Coordinates.Coordinate;
 import TFM.utils.UnitConversion;
-import static TFM.AircraftControl.TrafficSimulated.FLY_LOXODROMIC;
+import static TFM.Core.TrafficSimulated.FLY_LOXODROMIC;
 import classes.googleearth.GoogleEarthTraffic;
 import java.awt.Color;
 import java.util.Map;

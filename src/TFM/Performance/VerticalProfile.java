@@ -10,7 +10,7 @@ import TFM.utils.UnitConversion;
 import TFM.utils.Utils;
 import TFM.Coordinates.Coordinate;
 import TFM.Routes.Route;
-import TFM.AircraftControl.TrafficSimulated;
+import TFM.Core.TrafficSimulated;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;

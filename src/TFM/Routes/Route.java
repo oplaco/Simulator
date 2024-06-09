@@ -8,7 +8,7 @@ package TFM.Routes;
 import TFM.Performance.VerticalProfile;
 import TFM.Coordinates.Airport;
 import TFM.Coordinates.Coordinate;
-import TFM.AircraftControl.TrafficSimulated;
+import TFM.Core.TrafficSimulated;
 import TFM.Coordinates.WayPoint;
 import classes.googleearth.GoogleEarth;
 import gov.nasa.worldwind.WorldWind;

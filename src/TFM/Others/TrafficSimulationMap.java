@@ -2,25 +2,16 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package TFM.AircraftControl;
+package TFM.Others;
 
-import TFM.AircraftControl.TrafficSimulated;
 import TFM.AircraftControl.TrafficSimulatedListener;
-import traffic.*;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
+import TFM.Core.TrafficSimulated;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
-import org.opensky.libadsb.ModeSDecoder;
 import org.opensky.libadsb.Position;
-import org.opensky.libadsb.msgs.*;
-import org.opensky.libadsb.tools;
 
 /* TrafficMap that reads information from simulation file instead of adsb messages.*/
 public class TrafficSimulationMap extends ConcurrentHashMap<String, TrafficSimulated> {

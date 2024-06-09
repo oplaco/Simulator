@@ -4,7 +4,7 @@
  */
 package TFM.GUI;
 
-import TFM.Simulation;
+import TFM.Core.Simulation;
 import java.util.HashSet;
 
 /**

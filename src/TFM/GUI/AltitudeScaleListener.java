@@ -1,4 +1,4 @@
-package TFM;
+package TFM.GUI;
 
 /**
  * Listener que notifica de un cambio de altitud
