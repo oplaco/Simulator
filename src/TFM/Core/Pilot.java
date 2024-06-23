@@ -46,12 +46,11 @@ public class Pilot extends Thread implements ICommandSource {
     public double distanceThreshold; //Meters traveled each iteration
     private volatile boolean running = true; //The volatile keyword ensures that changes to the variable are immediately visible to all threads.
     private boolean verbose;
-    private GoogleEarthTraffic ge;
     private boolean PaintInGoogleEarth;
     private PilotListener listener = null;
     
     //Bearing/Course
-    private BearingStrategy sbs;
+    private BearingStrategy bearingStrategy;
     private double targetBearing;
     
     //Aircraft Control
@@ -90,9 +89,8 @@ public class Pilot extends Thread implements ICommandSource {
         this.verbose = true; // informa por pantalla
         
         this.atmosphericModel = new InternationalStandardAtmosphere();
-        this.sbs = new SimpleBearingStrategy();
-        
-        this.aircraftSpecifications = new AircraftSpecifications(atmosphericModel);      
+        this.bearingStrategy = new SimpleBearingStrategy(); 
+        this.aircraftSpecifications = new AircraftSpecifications();      
     }
 
     public Pilot(Route route, TrafficSimulated plane, int routeMode , Simulation simulation, VerticalProfile vp) {
@@ -106,11 +104,29 @@ public class Pilot extends Thread implements ICommandSource {
         this.PaintInGoogleEarth = false;
         this.verbose = true; // informa por pantalla
         
-        this.atmosphericModel = new InternationalStandardAtmosphere();
-        this.sbs = new SimpleBearingStrategy();
-        
-        this.aircraftSpecifications = new AircraftSpecifications(atmosphericModel);
+        this.atmosphericModel = simulation.getAtm();
+        this.bearingStrategy = simulation.getBearingStrategy();
+   
+        this.aircraftSpecifications = new AircraftSpecifications();
         this.vp = vp;
+    }
+    
+    public Pilot(Route route, TrafficSimulated plane, int routeMode, PilotListener listener, Simulation simulation) {
+        this.route = route;
+        this.plane = plane;
+        this.routeMode = routeMode;
+        this.flightPhase = "Cruise";
+        this.simulation = simulation;
+        this.waitTime = plane.getWaitTime() / 10;
+        updateDistanceThreshold();
+        this.running = true;
+        this.PaintInGoogleEarth = false;
+        this.verbose = true; // informa por pantalla
+        this.listener = listener;
+        
+        this.atmosphericModel = simulation.getAtm();    
+        this.bearingStrategy = simulation.getBearingStrategy();
+        this.aircraftSpecifications = new AircraftSpecifications();
     }
     
     public void changeToNextPhase() {
@@ -145,23 +161,6 @@ public class Pilot extends Thread implements ICommandSource {
         // If current phase is the last phase, wrap around to the first phase
         flightPhase = flightPhases.keySet().iterator().next();
     }
-    
-    public Pilot(Route route, TrafficSimulated plane, int routeMode, PilotListener listener, Simulation simulation) {
-        this.route = route;
-        this.plane = plane;
-        this.routeMode = routeMode;
-        this.flightPhase = "Cruise";
-        this.simulation = simulation;
-        this.waitTime = plane.getWaitTime() / 10;
-        updateDistanceThreshold();
-        this.running = true;
-        this.PaintInGoogleEarth = false;
-        this.verbose = true; // informa por pantalla
-        this.listener = listener;
-        
-        this.atmosphericModel = new InternationalStandardAtmosphere();    
-    }
-    
 //    public void initPhaseFlight(){
 //        this.flightPhase = TAKEOFFRUN; 
 //        this.plane.setSpeed(0);
@@ -331,7 +330,7 @@ public class Pilot extends Thread implements ICommandSource {
             targetBearing = plane.getPosition().getGreatCircleInitialBearing(to);
         }
         double currentBearing = plane.getCourse();
-        double nextBearing = sbs.calculateBearing(currentBearing, targetBearing, simulationTime - lastSimulationTime);
+        double nextBearing = bearingStrategy.calculateBearing(currentBearing, targetBearing, simulationTime - lastSimulationTime);
 
         // Sending command through the ICommandSource interface
         sendCommand(plane, new AircraftControlCommand(AircraftControlCommand.CommandType.COURSE, nextBearing, PILOT_PRIORITY));
@@ -340,7 +339,7 @@ public class Pilot extends Thread implements ICommandSource {
     @Override
     public void run() {
         int i;
-        this.myTCASTransponder = new TCASTransponder(plane.getHexCode(),simulation.getTrafficDisplayer().getWwd(),simulation.getPilotMap());
+        this.myTCASTransponder = new TCASTransponder(plane.getHexCode(),simulation.getTrafficDisplayer().getWwd(),simulation.getPilotMap(), simulation.getRASolver());
         if (listener != null) {
             listener.starting(route.getDeparture());
         }
@@ -351,7 +350,6 @@ public class Pilot extends Thread implements ICommandSource {
             
             for (i = 0; i < route.getWp().length; i++) {
                 nextWp=i;
-                System.out.println("Waypoint number: "+ nextWp);
                 to = route.getWp()[i];
                 fly(this.to);
                 if(!plane.isMoving())
@@ -376,10 +374,6 @@ public class Pilot extends Thread implements ICommandSource {
                     .getName()).log(Level.SEVERE, null, ex);
         }
 
-        if (PaintInGoogleEarth) {
-            ge.closeAndLaunch();
-        }
-
         if (verbose) {
             System.out.println("[PILOT OF " + plane + "]: End");
         }
@@ -397,16 +391,12 @@ public class Pilot extends Thread implements ICommandSource {
         if (nextWp < route.getWp().length) {
             Coordinate nextWaypoint = route.getWp()[nextWp];
             plane.flyit(to, routeMode);
-            System.out.println("[PILOT]: Continuing route to " + nextWaypoint.getLocationName());
+            if(verbose){
+                System.out.println("[PILOT]: Continuing route to " + nextWaypoint.getLocationName());
+            }
         }
     }
        
-    public void paint(String fileName, String altMode, Color col, int tick) {
-        PaintInGoogleEarth = true;
-
-        ge = new GoogleEarthTraffic(fileName, plane, altMode, col, tick);
-        plane.setPaintInGoogleEarth(ge);
-    }
 
     public void pauseThread() {
         System.out.println("Pilot of: "+plane.getHexCode()+" was paused.");
@@ -415,10 +405,12 @@ public class Pilot extends Thread implements ICommandSource {
     }
 
     public synchronized void resumeThread() {
-        System.out.println("Pilot of: "+plane.getHexCode()+" was resumed.");
         running = true;
         notifyAll(); // Notify the thread to continue
         plane.startit();
+        if(verbose){
+            System.out.println("Pilot of: "+plane.getHexCode()+" was resumed.");
+        }
     } 
     
     public int getRouteMode()

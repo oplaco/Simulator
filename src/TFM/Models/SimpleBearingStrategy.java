@@ -10,7 +10,7 @@ import TFM.Core.TrafficSimulated;
  *
  * @author Gabriel Alfonsín Espín
  * 
- * Simple bearing strategy that assumes the standard rate turn, also know as rate 
+ * Simple bearing strategy that assumes the standard rate turn, also known as rate 
  * one turn (ROT). A santard rate turn is defined as 3º per second turn, which 
  * completes a 360º turn in 2 minutes.
  */

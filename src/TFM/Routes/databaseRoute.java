@@ -55,13 +55,14 @@ public class DatabaseRoute extends Route {
     *
     * @param routeCode   The code representing the route from departure to destination.
     * @param maxDistance The maximum distance for connecting vertices in the graph.
+    * @param pathfinder Algorithm so find the shortest path.
     */
-    public DatabaseRoute(String routeCode, int maxDistance){
+    public DatabaseRoute(String routeCode, int maxDistance, PathfindingAlgorithm pathfinder){
         this.navaids = new HashMap<Integer, Navaid>();
         this.graph = new Graph(maxDistance);
         this.readNavaids("NDB","ES");
         this.fetchAirports(routeCode);
-        this.pathfinder = new DijkstraAlgorithm();
+        this.pathfinder = pathfinder;
         this.calculateWP();
     }
     
@@ -93,7 +94,7 @@ public class DatabaseRoute extends Route {
         this.buildGraph(this.departure, this.destination, intermediatePoints);
         
         //Solve the Graph using the pathfinder algorithm.
-        List<Coordinate> route =  this.pathfinder.getShortestPath(departure, destination, this.graph);
+        List<Coordinate> route =  this.pathfinder.getPath(departure, destination, this.graph);
         
         // Transforming List<Coordinate> to route class Waypoint[] wp. Setting numWaypoints 
         if (route.size() > 2) {
@@ -290,7 +291,7 @@ public class DatabaseRoute extends Route {
     //Main method to test the class if desired.
     public static void main(String[] args) {
     // Assuming these are initialized somewhere
-        DatabaseRoute route = new DatabaseRoute("LEST-LEPA",200000);  // Set a max distance threshold in m
+        DatabaseRoute route = new DatabaseRoute("LEST-LEPA",200000, new DijkstraAlgorithm());  // Set a max distance threshold in m
 
         if (route.getWp() != null) {
             for (WayPoint waypoint : route.getWp()) {

@@ -50,12 +50,12 @@ public class TCASTransponder implements ICommandSource {
     private boolean currentHandlingRA = false;
 
     
-    public TCASTransponder(String hexCode,WorldWindow wwd,ConcurrentHashMap pilotMap){
+    public TCASTransponder(String hexCode,WorldWindow wwd,ConcurrentHashMap pilotMap,ResolutionAdvisorySolver RASolver){
         this.wwd = wwd;
         this.pilotMap = pilotMap;
         this.ownHexCode = hexCode;
         this.ownTraffic = this.pilotMap.get(ownHexCode).getPlane();
-        this.RASolver = new RA_Solver();
+        this.RASolver = RASolver;
         this.trafficType = 0;
     }
     

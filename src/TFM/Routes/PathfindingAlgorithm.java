@@ -14,7 +14,7 @@ import java.util.Map;
  * a departure coordinate and a destination coordinate within a given graph.
  * </p>
  * <p>
- * The {@code getShortestPath} method takes the departure and destination coordinates, along with the graph
+ * The {@code getPath} method takes the departure and destination coordinates, along with the graph
  * representing the network of vertices and edges, and returns a list of coordinates representing the shortest path.
  * </p>
  * <p>
@@ -33,6 +33,6 @@ public interface PathfindingAlgorithm {
      * @param graph       The graph representing the network of vertices and edges.
      * @return A list of coordinates representing the shortest path from the departure to the destination.
      */
-    List<Coordinate> getShortestPath(Coordinate departure, Coordinate destination, Graph graph);
+    List<Coordinate> getPath(Coordinate departure, Coordinate destination, Graph graph);
 }
 

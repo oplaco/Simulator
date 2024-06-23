@@ -40,7 +40,7 @@ public class DijkstraAlgorithm implements PathfindingAlgorithm{
      * @return A list of coordinates representing the shortest path from the departure to the destination.
      */
     @Override
-    public List<Coordinate> getShortestPath(Coordinate departure, Coordinate destination, Graph graph) {
+    public List<Coordinate> getPath(Coordinate departure, Coordinate destination, Graph graph) {
         Map<Coordinate, Double> distances = new HashMap<>();
         Map<Coordinate, Coordinate> predecessors = new HashMap<>();
         PriorityQueue<Coordinate> queue = new PriorityQueue<>(Comparator.comparingDouble(distances::get));

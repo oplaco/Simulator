@@ -2,3 +2,14 @@
 /src/OurAirports/
 *.db
 OurAirports/*.csv
+##############################
+## NetBeans
+##############################
+nbproject/private/
+/build/
+build/
+nbbuild/
+dist/
+nbdist/
+nbactions.xml
+nb-configuration.xml

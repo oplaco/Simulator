@@ -13,6 +13,7 @@ import java.util.Map;
 /**
  *
  * @author Gabriel Alfonsín Espín
+ * Class for potentially store diferent Aircraft Specifivations.
  */
 public class AircraftSpecifications {
     private double takeoffAcc;
@@ -21,8 +22,7 @@ public class AircraftSpecifications {
     private double length; // m
     private double height; // m
     
-    //Empty constructor method uses the A320 vertical profile as default and A320 accelerations
-    public AircraftSpecifications(AtmosphericModel atmosphericModel) {
+    public AircraftSpecifications() {
         this.takeoffAcc = 2.5;
         this.landingAcc = -5;
     }

@@ -490,6 +490,6 @@ public class GUI {
     public static void main(String[] args) {
         // Call the static start method like this from the main method of your derived class.
         // Substitute your application's name for the first argument.
-        GUI.start("Visualizador de Rutas", AppFrame.class);
+        GUI.start("Simulation", AppFrame.class);
     }
 }

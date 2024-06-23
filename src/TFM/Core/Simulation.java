@@ -10,7 +10,14 @@ import TFM.simulationEvents.Command;
 import TFM.simulationEvents.CommandFactory;
 import TFM.simulationEvents.SimulationEvent;
 import TFM.Coordinates.Coordinate;
+import TFM.Models.BearingStrategy;
+import TFM.Models.SimpleBearingStrategy;
+import TFM.Models.SmoothBearingStrategy;
+import TFM.Routes.DijkstraAlgorithm;
+import TFM.Routes.PathfindingAlgorithm;
 import TFM.Routes.Route;
+import TFM.TCAS.RA_Solver;
+import TFM.TCAS.ResolutionAdvisorySolver;
 import gov.nasa.worldwind.View;
 import gov.nasa.worldwind.geom.Angle;
 import gov.nasa.worldwind.geom.Position;
@@ -37,62 +44,53 @@ import java.util.logging.Logger;
  * @author Gabriel Alfonsín Espín 
  */
 
-// Singleton 
-
 public class Simulation extends Thread {
-    private static Simulation instance;
     private long simulationTime = 0; // Start at 0 milliseconds
+    private int sleepTime = 100;
     private double speed = 1.0;   // Speed factor (1x, 2x, etc.)
     private boolean running = false; // Control flag for the simulation
     private long lastUpdateTime = 0; // To track the last update time
     private long elapsedSimulationTime;
-    private TrafficDisplayer trafficDisplayer;
-    
     private volatile boolean stopSimulation = false; // Flag to indicate if the simulation should stop
+        
+    private TrafficDisplayer trafficDisplayer;
 
     private TimeUpdateListener timeUpdateListener; // Listener to notify of time updates
     private ExecuteCommandListener executeCommandListener;  // Listener to notify when a command is executed
     
+    //Traffic and Pilot maps
     private TrafficSimulationMap trafficSimulationMap;
     private ConcurrentHashMap<String, Pilot> pilotMap;
     
-    //private TrafficMap
+    //Commands 
     private List<SimulationEvent> events;
     
-    //atmosphere
-    private AtmosphericModel atm; 
-    
-    public Simulation() {
-        this.start();
-    }
-
-    public Simulation(List<SimulationEvent> events) {
-        this.events = events;
-        this.pilotMap = new ConcurrentHashMap<String, Pilot>();
-        this.atm = new InternationalStandardAtmosphere();
-        this.start();
-    }
-    
+    //Models
+    private AtmosphericModel atm;
+    private PathfindingAlgorithm pathfindingAlgorithm;
+    private BearingStrategy bearingStrategy;
+    private ResolutionAdvisorySolver RASolver;
+            
     public Simulation(List<SimulationEvent> events, TrafficDisplayer trafficDisplayer) {
         this.events = events;
         this.trafficSimulationMap = trafficDisplayer.getTrafficSimulationmap();
         this.trafficDisplayer = trafficDisplayer;
         this.pilotMap = new ConcurrentHashMap<String, Pilot>();
-        this.atm = new InternationalStandardAtmosphere();
+        this.setModels();
         this.start();
+    }
+    
+    private void setModels(){
+        this.atm = new InternationalStandardAtmosphere();
+        this.pathfindingAlgorithm = new DijkstraAlgorithm();
+        this.bearingStrategy = new SmoothBearingStrategy();
+        this.RASolver = new RA_Solver();
     }
 
     public void start() {
         super.start(); // Start the thread
     }
-    
-    public static synchronized Simulation getInstance() {
-        if (instance == null) {
-            instance = new Simulation();
-        }
-        return instance;
-    }
-        
+   
     // Time control methods
     public synchronized void play() {
         running = true;
@@ -165,7 +163,7 @@ public class Simulation extends Thread {
 
             // Sleep for a short duration
             try {
-                Thread.sleep(100); // Adjust as needed
+                Thread.sleep(sleepTime); // Adjust as needed
             } catch (InterruptedException e) {
                 // Handle interrupted exception
             }
@@ -258,5 +256,17 @@ public class Simulation extends Thread {
 
     public AtmosphericModel getAtm() {
         return atm;
-    }   
+    }
+
+    public PathfindingAlgorithm getPathfindingAlgorithm() {
+        return pathfindingAlgorithm;
+    }
+
+    public BearingStrategy getBearingStrategy() {
+        return bearingStrategy;
+    }
+
+    public ResolutionAdvisorySolver getRASolver() {
+        return RASolver;
+    }  
 }

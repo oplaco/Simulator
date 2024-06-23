@@ -39,7 +39,7 @@ public class CreateCommand implements Command {
             } catch (IOException ex) {
                 System.out.println("Could not create InputTxtRoute. " + ex.getMessage());
                 try {
-                    route = new DatabaseRoute(variables.get("route"),200000); 
+                    route = new DatabaseRoute(variables.get("route"),200000,simulation.getPathfindingAlgorithm()); 
                 } catch (Exception e) {
                     System.out.println("Could not create DatabaseRoute. " + e.getMessage());
                     route = new Route() {};
