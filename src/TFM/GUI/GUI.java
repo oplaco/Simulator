@@ -33,6 +33,7 @@ import TFM.polygons.Runway;
 import TFM.polygons.TakeOffSurface;
 import TFM.simulationEvents.SimulationEvent;
 import TFM.simulationEvents.SimulationFileReader;
+import TFM.utils.Config;
 import TFM.utils.Utils;
 import gov.nasa.worldwindx.examples.*;
 import gov.nasa.worldwind.*;
@@ -168,12 +169,12 @@ public class GUI {
         }
 
         private void setupSimulation() {
-            String filePath = "src/simulation files/twoplaneTCAS.csv"; 
+            String filePath = Config.simulationFilePath; 
             List<SimulationEvent> events = SimulationFileReader.readCSVFile(filePath);
             this.detailViewPanel = new DetailViewPanel();
             this.trafficDisplayer = new TrafficDisplayer(this.getWwd(), detailViewPanel);
-            addSimulation("DefaultSimulation", new Simulation(events, this.trafficDisplayer));
-            setActiveSimulation("DefaultSimulation");
+            addSimulation(Config.nameOfDefaultSimulation, new Simulation(events, this.trafficDisplayer));
+            setActiveSimulation(Config.nameOfDefaultSimulation);
 
             this.getWwd().getView().addPropertyChangeListener(new PropertyChangeListener() {
                 @Override
@@ -215,9 +216,13 @@ public class GUI {
                 Box controlBox = Box.createVerticalBox();
                 TimeManagementMenu timeManagementPanel = new TimeManagementMenu(this.activeSimulation);
                 this.activeSimulation.setTimeUpdateListener(timeManagementPanel);
+                
+                LogsPanel logsPanel = new LogsPanel(this.activeSimulation.getTrafficSimulationMap());
 
                 Console console = new Console(this.activeSimulation);
+                
                 controlBox.add(timeManagementPanel);
+                controlBox.add(logsPanel);
                 controlBox.add(console);
 
                 controlPanel.add(controlBox, BorderLayout.SOUTH);
@@ -310,14 +315,14 @@ public class GUI {
             IconLayer navAidLayer = new IconLayer();
             navAidLayer.setName("NavAids Layer");
 
-            List<Runway> runwayList = Runway.createRunwaysFromDB("ES");
+            List<Runway> runwayList = Runway.createRunwaysFromDB(Config.specificCountry);
             for (Runway runway : runwayList) {
                 airportLayer.addRenderable(runway.getPolygon());
                 TakeOffSurface takeOffSurface = new TakeOffSurface(runway.getLength(), runway.getRunwayEnd(), runway.getBearing());
                 servitudesLayer.addRenderable(takeOffSurface.getPolygon());
             }
 
-            List<Navaid> navaidList = Navaid.getNavAidsFromDB("ES");
+            List<Navaid> navaidList = Navaid.getNavAidsFromDB(Config.specificCountry);
             for (Navaid navaid : navaidList) {
                 navAidLayer.addIcon(navaid);
             }

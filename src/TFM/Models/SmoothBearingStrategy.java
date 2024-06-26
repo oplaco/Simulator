@@ -12,18 +12,21 @@ package TFM.Models;
 public class SmoothBearingStrategy implements BearingStrategy {
     private static final double MAX_TURNING_RATE = 3.0; // Maximum turning rate in degrees per second
     private static final double ACCELERATION_RATE = 0.5; // Acceleration rate in degrees per second^2
+    private double currentTurningRate = 0.0; // Current turning rate in degrees per second
 
     @Override
     public double calculateBearing(double currentBearing, double targetBearing, long stepTime) {
-        double turningThisStep = calculateTurningRate(currentBearing, targetBearing, stepTime);
+        currentBearing = normalizeBearing(currentBearing);
+        targetBearing = normalizeBearing(targetBearing);
         double bearingDifference = targetBearing - currentBearing;
         bearingDifference = normalizeBearing(bearingDifference);
+        double turningThisStep = calculateTurningRate(bearingDifference, stepTime);
         double finalBearing;
 
         if (Math.abs(bearingDifference) < turningThisStep) {
             finalBearing = targetBearing;
         } else {
-            finalBearing = normalize360(currentBearing + Math.signum(bearingDifference) * turningThisStep);
+            finalBearing = normalizeBearing(currentBearing + Math.signum(bearingDifference) * turningThisStep);
         }
 
         // Validar el resultado para asegurarse de que no es NaN
@@ -34,35 +37,25 @@ public class SmoothBearingStrategy implements BearingStrategy {
         return finalBearing;
     }
 
-    private double calculateTurningRate(double currentBearing, double targetBearing, long stepTime) {
-        // Calcula la tasa de giro máxima posible para este paso de tiempo
-        double maxTurningThisStep = MAX_TURNING_RATE * stepTime / 1000.0;
+    private double calculateTurningRate(double bearingDifference, long stepTime) {
+        // Paso de tiempo en segundos
+        double stepTimeSeconds = stepTime / 1000.0;
 
-        // Evita valores negativos o NaN
-        if (maxTurningThisStep < 0 || Double.isNaN(maxTurningThisStep)) {
-            throw new IllegalArgumentException("La tasa de giro calculada es inválida.");
-        }
-
-        // Considerar la aceleración
-        double accelerationThisStep = ACCELERATION_RATE * stepTime / 1000.0;
-        
-        // Evita valores negativos o NaN
-        if (accelerationThisStep < 0 || Double.isNaN(accelerationThisStep)) {
-            throw new IllegalArgumentException("La aceleración calculada es inválida.");
-        }
-
-        // Si estamos cerca del destino, empezamos a desacelerar
-        double bearingDifference = normalizeBearing(targetBearing - currentBearing);
-        double decelerationDistance = maxTurningThisStep * maxTurningThisStep / (2 * ACCELERATION_RATE);
+        // Calcular la distancia de desaceleración
+        double decelerationDistance = (MAX_TURNING_RATE * MAX_TURNING_RATE) / (2 * ACCELERATION_RATE);
 
         if (Math.abs(bearingDifference) <= decelerationDistance) {
             // Desacelerar para detenerse suavemente
-            double requiredDecelerationRate = Math.sqrt(2 * ACCELERATION_RATE * Math.abs(bearingDifference));
-            return Math.min(maxTurningThisStep, requiredDecelerationRate);
-        } else {
+            currentTurningRate = Math.max(0, currentTurningRate - ACCELERATION_RATE * stepTimeSeconds);
+        } else if (currentTurningRate < MAX_TURNING_RATE) {
             // Acelerar hasta la tasa de giro máxima
-            return Math.min(maxTurningThisStep, accelerationThisStep);
+            currentTurningRate = Math.min(MAX_TURNING_RATE, currentTurningRate + ACCELERATION_RATE * stepTimeSeconds);
+        } else {
+            // Mantener la tasa de giro constante
+            currentTurningRate = MAX_TURNING_RATE;
         }
+
+        return currentTurningRate * stepTimeSeconds;
     }
 
     private double normalizeBearing(double bearing) {
@@ -78,5 +71,4 @@ public class SmoothBearingStrategy implements BearingStrategy {
         return (bearing + 360) % 360;
     }
 }
-
 

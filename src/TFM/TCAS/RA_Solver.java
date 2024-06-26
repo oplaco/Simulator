@@ -63,9 +63,9 @@ public class RA_Solver implements ResolutionAdvisorySolver{
         double q = Math.min(t, s);
         double l = Math.max(0,t-s);
         if(a==Double.POSITIVE_INFINITY){
-            return q*v_oz + s_oz + epsilon*l*s;   
+            return q*v_oz + s_oz + epsilon*l*v;   
         }else{
-            return epsilon*q*q*a*0.5 + q*v_oz + s_oz + epsilon*l*s; 
+            return epsilon*q*q*a*0.5 + q*v_oz + s_oz + epsilon*l*v; 
         }
     }
    

@@ -261,7 +261,6 @@ public class Pilot extends Thread implements ICommandSource {
         double distance = to.getRhumbLineDistance(plane.getPosition());
         double distanceToTOD;
         double distanceToRunwayEnd;
-        //System.out.println(distanceThreshold);
      
         while (distance > distanceThreshold) {
             // Pause thread if running is false
@@ -294,7 +293,7 @@ public class Pilot extends Thread implements ICommandSource {
 //                               " Temperature (K): " + atmosphericModel.calculateTemperature(geometricAltitude) +
 //                               " Pressure (Pa): " + atmosphericModel.calculatePressure(geometricAltitude) +
 //                               " Speed of sound: " + atmosphericModel.calculateSpeedOfSound(atmosphericModel.calculateTemperature(geometricAltitude)) );   
-//            System.out.println("[PILOT] distance "+distance + "distanceThreshold" + distanceThreshold); 
+            //System.out.println("[PILOT]" +plane.getHexCode()+" Altitude (ft) "+plane.getPosition().getAltitude() + " verticalRate(ft/min) " + plane.getVerticalRate() +" speed " + plane.getSpeed()+" latitude "+plane.getPosition().getLatitude()+" longitude "+plane.getPosition().getLongitude()); 
             flightPhase = vp.checkFlightPhase(flightPhase, plane.getSpeed(), geometricAltitude, distanceToTOD, distanceThreshold);
             
             
@@ -331,7 +330,6 @@ public class Pilot extends Thread implements ICommandSource {
         }
         double currentBearing = plane.getCourse();
         double nextBearing = bearingStrategy.calculateBearing(currentBearing, targetBearing, simulationTime - lastSimulationTime);
-
         // Sending command through the ICommandSource interface
         sendCommand(plane, new AircraftControlCommand(AircraftControlCommand.CommandType.COURSE, nextBearing, PILOT_PRIORITY));
     }

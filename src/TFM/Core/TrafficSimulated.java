@@ -320,9 +320,8 @@ public class TrafficSimulated extends Thread  implements ControllableAircraft{
                 course = position.getGreatCircleInitialBearing(target);
             }
             altitude = position.getAltitude() + verticalRate * timeStepDelta  / (1000*60)*UnitConversion.ftToMeter;
-            System.out.println("[PLANE] "+this.getHexCode() + " Altitude (ft): " +altitude/UnitConversion.ftToMeter + " verticalRate (ft/min)" + verticalRate + " speed (kts)"+ speed);
+            //System.out.println("[PLANE] "+this.getHexCode() + " Altitude (ft): " +altitude/UnitConversion.ftToMeter + " verticalRate (ft/min)" + verticalRate + " speed (kts)"+ speed);
             position.setAltitude(altitude); //in meters
-            System.out.println("Logging data");
             lastSimulationTime = tmpTime;
             //Loggin
             

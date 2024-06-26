@@ -80,25 +80,27 @@ public class TCASTransponder implements ICommandSource {
     }
       
     public void updateTrafficType(Pilot otherPilot){
-        TCPA = Math.abs(TCPA);
+        //TCPA = Math.abs(TCPA);
         //Only enforce TA and RA if targets are within 6NM. It should be 6NM horizontally and within 1200ft.
         handlingRA = false;
         if(Math.abs(distanceToTraffic)<6000/UnitConversion.meterToNM){
-            if(TCPA<25 && TCPA>0){
+            if(TCPA>-25 && TCPA<0){
                 trafficType = resolutionAdvisory;
                 handlingRA = true;
-            }else if(TCPA<40 && TCPA>=25){
+            }else if(TCPA>-40 && TCPA<=25){
                 trafficType = trafficAdvisory;              
-            }else if(TCPA>=40){
+            }else if(TCPA<=-40){
                 trafficType = proximateTraffic;
             }
+        }else{
+            trafficType = otherTraffic;
         }
         
         // If the traffic situation has improved, reset the priority
         if (!handlingRA && currentHandlingRA) {
             ownTraffic.resetPriority();
         }
-
+     
         currentHandlingRA = handlingRA; // Store the current handling state for comparison in the next iteration
     }
   
@@ -109,7 +111,6 @@ public class TCASTransponder implements ICommandSource {
         Vec4 vec4_traffic_o = wwd.getModel().getGlobe().computePointFromPosition(getNasaPos(traffic_o));
         Vec4 vec4_traffic_i = wwd.getModel().getGlobe().computePointFromPosition(getNasaPos(traffic_i));
         double[] relECEFPosition = {vec4_traffic_o.getX()-vec4_traffic_i.getX(),vec4_traffic_o.getY()-vec4_traffic_i.getY(),vec4_traffic_o.getZ()-vec4_traffic_i.getZ()};
-        
         double[] S_o_NED = ecefToNED(relECEFPosition,getNasaPos(traffic_i));
         double[] S_i_NED = new double[]{0,0,0};
         
@@ -143,14 +144,13 @@ public class TCASTransponder implements ICommandSource {
         double v = RAverticalSpeed;
         double a = Double.POSITIVE_INFINITY;
         
-        //System.out.println("[TCAS] "+traffic_o.getHexCode()+ " TCPA "+TCPA+" CPA "+CPA);
+        System.out.println("[TCAS] "+traffic_o.getHexCode()+ " TCPA "+TCPA+" CPA "+CPA);
                        
         if (trafficType==resolutionAdvisory){
             int solution = RASolver.solve(S_o, s_oz, V_o, v_oz, S_i, s_iz, V_i, v_iz, v, a);
             if (solution == 1){
                 System.out.println("[TCAS] "+traffic_o.getHexCode()+ " ordered to ASCEND");
                 sendCommand(ownTraffic, new AircraftControlCommand(AircraftControlCommand.CommandType.VERTICAL_RATE, 1000.0, 1));
-                System.out.println("[TCAS] "+traffic_o.getHexCode()+ " ordered to ASCEND");
             }else{
                 System.out.println("[TCAS] "+traffic_o.getHexCode()+ " ordered to DESCEND"); 
                 sendCommand(ownTraffic, new AircraftControlCommand(AircraftControlCommand.CommandType.VERTICAL_RATE, -1000.0, 1)); 
@@ -181,37 +181,34 @@ public class TCASTransponder implements ICommandSource {
         Emphasize that the ecef position must be already the relative position in cartesian coordinates to that origin.
     */
     public double[] ecefToNED(double[] ecefPosition, gov.nasa.worldwind.geom.Position originPosition) {
-        double xRel,yRel,zRel, latOrigin, lonOrigin;
+        double xRel, yRel, zRel, latOrigin, lonOrigin;
         xRel = ecefPosition[0];
         yRel = ecefPosition[1];
         zRel = ecefPosition[2];
         latOrigin = originPosition.getLatitude().getDegrees();
         lonOrigin = originPosition.getLongitude().getDegrees();
 
-        // Convert lat and lon from degrees to radians if necessary
+        // Convert lat and lon from degrees to radians
         double phi = Math.toRadians(latOrigin);
         double lambda = Math.toRadians(lonOrigin);
 
-        // Transformation matrix from ECEF to NED
-        double[][] R = {
-            { -Math.sin(phi) * Math.cos(lambda), -Math.sin(lambda), -Math.cos(phi) * Math.cos(lambda) },
-            { -Math.sin(phi) * Math.sin(lambda), Math.cos(lambda), -Math.cos(phi) * Math.sin(lambda) },
-            { Math.cos(phi), 0, -Math.sin(phi) }
+        // ECEF to ENU transformation matrix
+        double[][] R_ENU = {
+            { -Math.sin(lambda), Math.cos(lambda), 0 },
+            { -Math.cos(lambda) * Math.sin(phi), -Math.sin(lambda) * Math.sin(phi), Math.cos(phi) },
+            { Math.cos(lambda) * Math.cos(phi), Math.sin(lambda) * Math.cos(phi), Math.sin(phi) }
         };
 
-        // Relative ECEF position vector
-        double[] relECEF = {xRel, yRel, zRel};
-
-        // Apply the transformation matrix to get NED coordinates
-        double[] ned = new double[3];
+        // Transform ECEF to ENU coordinates
+        double[] enu = new double[3];
         for (int i = 0; i < 3; i++) {
-            ned[i] = R[i][0] * relECEF[0] + R[i][1] * relECEF[1] + R[i][2] * relECEF[2];
+            enu[i] = R_ENU[i][0] * xRel + R_ENU[i][1] * yRel + R_ENU[i][2] * zRel;
         }
 
-        return ned; // Returns an array [North, East, Down]
+        // ENU to NED transformation: [East, North, Up] -> [North, East, -Up]
+        return new double[]{enu[1], enu[0], -enu[2]}; // Returns an array [North, East, Down]
     }
-    
-    
+
     public double calculateTCPA(double[] relPos, double[] relVel) {
         double dotProduct = relPos[0] * relVel[0] + relPos[1] * relVel[1] + relPos[2] * relVel[2];
         double velMagnitudeSquared = relVel[0] * relVel[0] + relVel[1] * relVel[1] + relVel[2] * relVel[2];

@@ -17,6 +17,8 @@ import TFM.Core.TrafficSimulated;
 public class SimpleBearingStrategy implements BearingStrategy {
     @Override
     public double calculateBearing(double currentBearing , double targetBearing, long stepTime) {
+        currentBearing = normalizeBearing(normalize360(currentBearing));
+        targetBearing = normalizeBearing(normalize360(targetBearing));
         double turningRate = 3.0; // Default turning rate
         double turningThisStep = turningRate * stepTime/1000; 
         double bearingDifference = targetBearing - currentBearing;
@@ -26,7 +28,7 @@ public class SimpleBearingStrategy implements BearingStrategy {
         if (Math.abs(bearingDifference) < turningThisStep) {
             finalBearing = targetBearing;
         } else {
-            finalBearing = normalize360(currentBearing + Math.signum(bearingDifference) * turningThisStep);
+            finalBearing = normalizeBearing(currentBearing + Math.signum(bearingDifference) * turningThisStep);
         }
         return finalBearing;
     }

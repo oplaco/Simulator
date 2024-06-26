@@ -9,30 +9,20 @@ import TFM.Atmosphere.InternationalStandardAtmosphere;
 import TFM.simulationEvents.Command;
 import TFM.simulationEvents.CommandFactory;
 import TFM.simulationEvents.SimulationEvent;
-import TFM.Coordinates.Coordinate;
 import TFM.Models.BearingStrategy;
+import TFM.Models.NoBearingStrategy;
 import TFM.Models.SimpleBearingStrategy;
 import TFM.Models.SmoothBearingStrategy;
 import TFM.Routes.DijkstraAlgorithm;
 import TFM.Routes.PathfindingAlgorithm;
-import TFM.Routes.Route;
 import TFM.TCAS.RA_Solver;
 import TFM.TCAS.ResolutionAdvisorySolver;
-import gov.nasa.worldwind.View;
-import gov.nasa.worldwind.geom.Angle;
-import gov.nasa.worldwind.geom.Position;
-import java.io.File;
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import static java.util.Map.entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -80,13 +70,41 @@ public class Simulation extends Thread {
         this.start();
     }
     
-    private void setModels(){
-        this.atm = new InternationalStandardAtmosphere();
-        this.pathfindingAlgorithm = new DijkstraAlgorithm();
-        this.bearingStrategy = new SmoothBearingStrategy();
-        this.RASolver = new RA_Solver();
+    /**
+     * Sets the models used in the simulation.
+     * <p>
+     * This method initializes various models used within the simulator. Each model is assigned
+     * a specific implementation, but these can be easily swapped out for different implementations to change
+     * the behavior of the simulation.
+     * </p>
+     * <p>
+     * The current models set in this method include:
+     * </p>
+     * <ul>
+     *     <li><b>Atmospheric Model:</b> {@link InternationalStandardAtmosphere} - This model simulates the 
+     *     international standard atmosphere conditions.</li>
+     *     <li><b>Pathfinding Algorithm:</b> {@link DijkstraAlgorithm} - This algorithm is used for finding 
+     *     the shortest path in a network, typically used in route planning.</li>
+     *     <li><b>Bearing Strategy:</b> {@link SmoothBearingStrategy} - This strategy determines how the aircraft 
+     *     turns to adjust its bearing gradually towards a target bearing, simulating a smooth turn.</li>
+     *     <li><b>Resolution Advisory Solver:</b> {@link RA_Solver} - This solver provides a mechanism to 
+     *     resolve conflicts and advisories in flight paths, ensuring safe navigation.</li>
+     * </ul>
+     * <p>
+     * To change the behavior of the simulator, different implementations of these interfaces can be provided.
+     * For example, one could implement a different bearing strategy or pathfinding algorithm and simply 
+     * replace the current implementation in this method.
+     * </p>
+     */
+    private void setModels() {
+        this.atm = new InternationalStandardAtmosphere(); // Atmospheric model
+        this.pathfindingAlgorithm = new DijkstraAlgorithm(); // Pathfinding algorithm
+        this.bearingStrategy = new SimpleBearingStrategy(); // Bearing strategy
+        this.RASolver = new RA_Solver(); // Resolution advisory solver
     }
 
+
+    @Override
     public void start() {
         super.start(); // Start the thread
     }
@@ -126,6 +144,7 @@ public class Simulation extends Thread {
         }
     }
 
+    @Override
     public void run() {
         this.lastUpdateTime = System.currentTimeMillis(); // Initialize the last update time
         while (!stopSimulation) {
