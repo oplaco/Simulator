@@ -38,7 +38,7 @@ public class TCASTransponder implements ICommandSource {
     //Distance between aircrafts in closest point of approach is missing as of now.
     private double distanceToTraffic; 
     
-    private long range = 200000; // meters
+    private long range = 100000; // meters
     private int sentivityLevel;
     private ConcurrentHashMap<String, Pilot> pilotMap; //Need to have access to all the aircrafts in the simulation
     private ConcurrentHashMap<String, TrafficSimulated> trafficWithinRangeMap; //Store all the aircrafts that are in range.
@@ -67,13 +67,15 @@ public class TCASTransponder implements ICommandSource {
 
             // Skip the reference plane itself
             if (!hexCode.equals(ownHexCode)) {
+                double distanceBetweenPlanes = ownTraffic.getPosition().getGreatCircleDistance(otherPilot.getPlane().getPosition());
+                if (Math.abs(distanceBetweenPlanes)<range){
                 // Calculate TCPA and CPA between the two planes.
                 computeTCASInterrogation(otherPilot.getPlane());
                 
                 distanceToTraffic = ownTraffic.getPosition().getGreatCircleDistance(otherPilot.getPlane().getPosition());
                 //update the traffic type (traffic advisory, resolution advisory based on TCPA)
                 updateTrafficType(otherPilot);
-                
+                }             
             }
         
         }

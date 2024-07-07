@@ -50,11 +50,17 @@ public class SimulationFileReader {
             }
             SimulationEvent event = SimulationEvent.createEvent(time, command, variables);
             return event;
+        } else if(parts.length == 2){
+            long time = Long.parseLong(parts[0]);
+            String command = parts[1];
+            SimulationEvent event = SimulationEvent.createEvent(time, command, null);
+            return event;
         }
+    
         return null;
     }
     
-    public static SimulationEvent getEventFromString(long time,String line){
+    public static SimulationEvent createEventFromString(long time,String line){
         String[] parts = line.split(",");
         if (parts.length >= 2) {
             String command = parts[0];
@@ -66,6 +72,10 @@ public class SimulationFileReader {
                 }
             }
             SimulationEvent event = SimulationEvent.createEvent(time, command, variables);
+            return event;
+        } else if (parts.length == 1){
+            String command = parts[0];
+            SimulationEvent event = SimulationEvent.createEvent(time, command, null);
             return event;
         }
         return null;

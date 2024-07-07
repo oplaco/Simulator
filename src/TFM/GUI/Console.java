@@ -89,7 +89,7 @@ public class Console extends javax.swing.JPanel implements ExecuteCommandListene
     private void consoleTextFieldKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_consoleTextFieldKeyPressed
         // The Enter key was pressed, add your handling code here
         if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) {
-            SimulationEvent event = SimulationFileReader.getEventFromString(this.simulation.getSimulationTime(),consoleTextField.getText());
+            SimulationEvent event = SimulationFileReader.createEventFromString(this.simulation.getSimulationTime(),consoleTextField.getText());
 
             if (event == null){
                 this.appendToConsole("Invalid input","error");

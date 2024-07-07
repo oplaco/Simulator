@@ -22,7 +22,11 @@ public class SimulationEvent {
         ALLOWED_COMMANDS.add("CREATE");
         ALLOWED_COMMANDS.add("UPDATE");
         ALLOWED_COMMANDS.add("DELETE");
+        ALLOWED_COMMANDS.add("PAUSE");
+        ALLOWED_COMMANDS.add("START");
+        ALLOWED_COMMANDS.add("RESUME");
         ALLOWED_COMMANDS.add("CENTERVIEW");
+        ALLOWED_COMMANDS.add("SIMSPEED");
     }
     
     private long time;
@@ -33,6 +37,11 @@ public class SimulationEvent {
         this.time = time;
         this.command = command;
         this.variables = variables;
+    }
+    
+    public SimulationEvent(long time, String command) {
+        this.time = time;
+        this.command = command;
     }
     
     

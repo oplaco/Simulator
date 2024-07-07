@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -147,6 +149,12 @@ public class Simulation extends Thread {
     @Override
     public void run() {
         this.lastUpdateTime = System.currentTimeMillis(); // Initialize the last update time
+        //Little delay for everything to set up.
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(Simulation.class.getName()).log(Level.SEVERE, null, ex);
+        }
         while (!stopSimulation) {
             if (running) {
                 long currentTime = System.currentTimeMillis();
@@ -159,25 +167,25 @@ public class Simulation extends Thread {
                 simulationTime += elapsedSimulationTime;
 
                 // Perform simulation updates (e.g., move aircraft, update conditions)
-                updateSimulation();
-                
-                //Loop trough the simulation events (if any) and execute the commands. Remove the used ones to avoid iterating again trough them.
-                Iterator<SimulationEvent> iterator = events.iterator();
-                while (iterator.hasNext()) {
-                    SimulationEvent event = iterator.next();
-                    if (event.getTime() <= simulationTime) {
-                        try{
-                            executeCommand(event);
-                            this.executeCommandListener.onCommandExecuted(event.toString(), "normal");
-                        }catch (IllegalArgumentException e) {
-                            this.executeCommandListener.onCommandExecuted(e.toString(), "error");
-                        }
-                        iterator.remove(); // Remove the executed event from the list
-                    }
-                }
+                updateSimulation();            
 
                 // Update lastUpdateTime to the current time
                 lastUpdateTime = currentTime;
+            }
+            
+            //Loop trough the simulation events (if any) and execute the commands. Remove the used ones to avoid iterating again trough them.
+            Iterator<SimulationEvent> iterator = events.iterator();
+            while (iterator.hasNext()) {
+                SimulationEvent event = iterator.next();
+                if (event.getTime() <= simulationTime) {
+                    try{
+                        executeCommand(event);
+                        this.executeCommandListener.onCommandExecuted(event.toString(), "normal");
+                    }catch (IllegalArgumentException e) {
+                        this.executeCommandListener.onCommandExecuted(e.toString(), "error");
+                    }
+                    iterator.remove(); // Remove the executed event from the list
+                }
             }
 
             // Sleep for a short duration

@@ -17,6 +17,13 @@ public class CommandFactory {
                 return new UpdateCommand();
             case "CENTERVIEW":
                 return new CenterViewCommand();
+            case "PAUSE":
+                return new PauseCommand();
+            case "START":
+            case "RESUME":
+                return new ResumeCommand();
+            case "SIMSPEED":
+                return new SimSpeedCommand();
             default:
                 throw new IllegalArgumentException("Invalid command type: " + commandType);
         }
